@@ -1,0 +1,44 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--production=false"
+  # Supabase Environment Variables
+  VITE_SUPABASE_URL = "https://awzmtrsyinzgxrcrfdez.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3em10cnN5aW56Z3hyY3JmZGV6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwNDUzMzUsImV4cCI6MjA2ODYyMTMzNX0.5r4fDsqW8KYnVcy8FzR-2gNrmLCRqZP_Clr4pFft0r8"
+
+# SPA routing - redirect all routes to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    # Simplified CSP to avoid conflicts
+    Content-Security-Policy = "default-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: https://*.imgix.net https://images.unsplash.com https://ph-files.imgix.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co;"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Prevent double loading during deployment
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
