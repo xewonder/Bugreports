@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React,{useState,useEffect} from 'react';
 import {motion} from 'framer-motion';
 import {useAuth} from '../contexts/AuthContext';
 import SafeIcon from '../common/SafeIcon';
@@ -6,74 +6,77 @@ import * as FiIcons from 'react-icons/fi';
 import supabase from '../lib/supabase';
 import {format} from 'date-fns';
 
-const {FiSearch, FiEdit3, FiSave, FiX, FiTrash2, FiUserPlus, FiCheckCircle, FiAlertCircle, FiUser, FiMail, FiCalendar, FiShield, FiFilter} = FiIcons;
+const {FiSearch,FiEdit3,FiSave,FiX,FiTrash2,FiUserPlus,FiCheckCircle,FiAlertCircle,FiUser,FiMail,FiCalendar,FiShield,FiFilter}=FiIcons;
 
-const UserManagement = () => {
-  const {userProfile, updateUserRole} = useAuth();
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('All');
-  const [sortBy, setSortBy] = useState('created_at');
-  const [editingUser, setEditingUser] = useState(null);
-  const [statusMessage, setStatusMessage] = useState({type: '', message: ''});
+const UserManagement=()=> {
+  const {userProfile,updateUserRole}=useAuth();
+  const [users,setUsers]=useState([]);
+  const [filteredUsers,setFilteredUsers]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [searchTerm,setSearchTerm]=useState('');
+  const [roleFilter,setRoleFilter]=useState('All');
+  const [sortBy,setSortBy]=useState('created_at');
+  const [editingUser,setEditingUser]=useState(null);
+  const [statusMessage,setStatusMessage]=useState({type: '',message: ''});
 
-  useEffect(() => {
+  useEffect(()=> {
     fetchUsers();
-  }, []);
+  },[]);
 
-  useEffect(() => {
+  useEffect(()=> {
     filterUsers();
-  }, [users, searchTerm, roleFilter]);
+  },[users,searchTerm,roleFilter]);
 
-  const fetchUsers = async () => {
+  const fetchUsers=async ()=> {
     try {
       setLoading(true);
-      const {data, error} = await supabase
+      const {data,error}=await supabase
         .from('profiles_mgg_2024')
         .select('*')
-        .order('created_at', {ascending: false});
+        .order('created_at',{ascending: false});
 
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      setStatusMessage({type: 'error', message: 'Failed to load users: ' + error.message});
+      console.error('Error fetching users:',error);
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to load users: ' + error.message
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filterUsers = () => {
-    let filtered = [...users];
+  const filterUsers=()=> {
+    let filtered=[...users];
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(user => 
-        user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      filtered=filtered.filter(user=>
+        user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.nickname?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply role filter
-    if (roleFilter !== 'All') {
-      filtered = filtered.filter(user => user.role === roleFilter.toLowerCase());
+    if (roleFilter !=='All') {
+      filtered=filtered.filter(user=> user.role===roleFilter.toLowerCase());
     }
 
     // Apply sorting
-    filtered.sort((a, b) => {
-      if (sortBy === 'created_at') {
+    filtered.sort((a,b)=> {
+      if (sortBy==='created_at') {
         return new Date(b.created_at) - new Date(a.created_at);
       }
-      if (sortBy === 'email') {
+      if (sortBy==='email') {
         return a.email.localeCompare(b.email);
       }
-      if (sortBy === 'name') {
+      if (sortBy==='name') {
         return (a.full_name || '').localeCompare(b.full_name || '');
       }
-      if (sortBy === 'role') {
+      if (sortBy==='role') {
         return (a.role || '').localeCompare(b.role || '');
       }
       return 0;
@@ -82,78 +85,167 @@ const UserManagement = () => {
     setFilteredUsers(filtered);
   };
 
-  const handleUpdateUser = async (userId, updates) => {
+  const handleUpdateUser=async (userId,updates)=> {
     try {
+      console.log('Updating user:',userId,'with updates:',updates);
+      
+      // Validate required fields
+      if (!userId) {
+        throw new Error('User ID is required');
+      }
+
       // Validate role if it's being updated
-      if (updates.role && !['user', 'developer', 'admin'].includes(updates.role)) {
+      if (updates.role && !['user','developer','admin'].includes(updates.role)) {
         throw new Error('Invalid role selected');
       }
 
-      // Update user in Supabase - FIX: Add single() to ensure only one record is returned
-      const {data, error} = await supabase
+      // First, check if the user exists
+      const {data: existingUser,error: checkError}=await supabase
         .from('profiles_mgg_2024')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId)
-        .select()
-        .single();  // Add this to ensure only one row is returned
+        .select('id,email,full_name,nickname,role')
+        .eq('id',userId)
+        .single();
+
+      if (checkError || !existingUser) {
+        console.error('User not found:',checkError);
+        throw new Error('User not found. They may have been deleted or the ID is incorrect.');
+      }
+
+      console.log('Found existing user:',existingUser);
+
+      // Prepare the update data
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Update data:',updateData);
+
+      // Update user in Supabase
+      const {data,error}=await supabase
+        .from('profiles_mgg_2024')
+        .update(updateData)
+        .eq('id',userId)
+        .select();
 
       if (error) {
+        console.error('Update error:',error);
         throw error;
       }
 
+      console.log('Update result:',data);
+
+      // Check if any rows were updated
+      if (!data || data.length===0) {
+        throw new Error('No rows were updated. The user may not exist or you may not have permission.');
+      }
+
       // Update local state
-      const updatedUsers = users.map(user => 
-        user.id === userId ? {...user, ...updates, updated_at: new Date().toISOString()} : user
+      const updatedUsers=users.map(user=>
+        user.id===userId 
+          ? {...user,...updateData}
+          : user
       );
       setUsers(updatedUsers);
       setEditingUser(null);
 
-      // If updating role, use the role update function
+      // If updating role, also call the auth context method
       if (updates.role) {
-        const result = await updateUserRole(userId, updates.role);
-        if (result.error) throw result.error;
+        console.log('Calling updateUserRole...');
+        const result=await updateUserRole(userId,updates.role);
+        if (result.error) {
+          console.error('Role update error:',result.error);
+          // Don't throw here as the profile was already updated
+          setStatusMessage({
+            type: 'warning', 
+            message: 'User profile updated but role change may not have taken effect immediately.'
+          });
+          return;
+        }
       }
 
-      setStatusMessage({type: 'success', message: 'User updated successfully'});
-    } catch (error) {
-      console.error('Error updating user:', error);
       setStatusMessage({
-        type: 'error', 
-        message: error.message === 'Invalid role selected' 
-          ? 'Invalid role. Please select user, developer, or admin.' 
-          : 'Failed to update user: ' + error.message
+        type: 'success',
+        message: 'User updated successfully'
       });
+
+      // Clear success message after 3 seconds
+      setTimeout(()=> {
+        setStatusMessage({type: '',message: ''});
+      },3000);
+
+    } catch (error) {
+      console.error('Error updating user:',error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to update user';
+      
+      if (error.message.includes('Invalid role')) {
+        errorMessage = 'Invalid role. Please select user, developer, or admin.';
+      } else if (error.message.includes('not found')) {
+        errorMessage = 'User not found. They may have been deleted.';
+      } else if (error.message.includes('permission')) {
+        errorMessage = 'You don\'t have permission to update this user.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setStatusMessage({
+        type: 'error',
+        message: errorMessage
+      });
+
+      // Reset editing state on error
+      setEditingUser(null);
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) return;
+  const handleDeleteUser=async (userId)=> {
+    if (!window.confirm('Are you sure you want to deactivate this user?')) return;
 
     try {
       // Instead of deleting the user, mark them as inactive
-      const {error} = await supabase
+      const {error}=await supabase
         .from('profiles_mgg_2024')
         .update({
           is_active: false,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId);
+        .eq('id',userId);
 
       if (error) throw error;
 
       // Update local state
-      setUsers(users.map(user => user.id === userId ? {...user, is_active: false} : user));
-      setStatusMessage({type: 'success', message: 'User deactivated successfully'});
+      setUsers(users.map(user=> 
+        user.id===userId 
+          ? {...user,is_active: false} 
+          : user
+      ));
+
+      setStatusMessage({
+        type: 'success',
+        message: 'User deactivated successfully'
+      });
+
+      setTimeout(()=> {
+        setStatusMessage({type: '',message: ''});
+      },3000);
+
     } catch (error) {
-      console.error('Error deactivating user:', error);
-      setStatusMessage({type: 'error', message: 'Failed to deactivate user: ' + error.message});
+      console.error('Error deactivating user:',error);
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to deactivate user: ' + error.message
+      });
     }
   };
 
-  const getRoleColor = (role) => {
+  const handleCancelEdit=()=> {
+    setEditingUser(null);
+    setStatusMessage({type: '',message: ''});
+  };
+
+  const getRoleColor=(role)=> {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800 border-red-200';
       case 'developer': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -176,16 +268,23 @@ const UserManagement = () => {
       {/* Status Message */}
       {statusMessage.message && (
         <motion.div
-          initial={{opacity: 0, y: -10}}
-          animate={{opacity: 1, y: 0}}
+          initial={{opacity: 0,y: -10}}
+          animate={{opacity: 1,y: 0}}
           className={`p-4 rounded-lg mb-6 flex items-center space-x-2 ${
-            statusMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            statusMessage.type==='success' 
+              ? 'bg-green-50 text-green-700' 
+              : statusMessage.type==='warning'
+              ? 'bg-yellow-50 text-yellow-700'
+              : 'bg-red-50 text-red-700'
           }`}
         >
-          <SafeIcon icon={statusMessage.type === 'success' ? FiCheckCircle : FiAlertCircle} className="flex-shrink-0" />
+          <SafeIcon 
+            icon={statusMessage.type==='success' ? FiCheckCircle : FiAlertCircle} 
+            className="flex-shrink-0" 
+          />
           <span>{statusMessage.message}</span>
           <button
-            onClick={() => setStatusMessage({type: '', message: ''})}
+            onClick={()=> setStatusMessage({type: '',message: ''})}
             className="ml-auto text-gray-500 hover:text-gray-700"
           >
             <SafeIcon icon={FiX} />
@@ -203,7 +302,7 @@ const UserManagement = () => {
               type="text"
               placeholder="Search users..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e)=> setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -213,7 +312,7 @@ const UserManagement = () => {
             <SafeIcon icon={FiFilter} className="text-gray-400" />
             <select
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              onChange={(e)=> setRoleFilter(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="All">All Roles</option>
@@ -228,7 +327,7 @@ const UserManagement = () => {
             <span className="text-gray-500">Sort by:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e)=> setSortBy(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="created_at">Registration Date</option>
@@ -267,21 +366,31 @@ const UserManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className={user.is_active === false ? 'bg-gray-50' : ''}>
+              {filteredUsers.map((user)=> (
+                <tr key={user.id} className={user.is_active===false ? 'bg-gray-50' : ''}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-full flex items-center justify-center">
                         <SafeIcon icon={FiUser} className="text-gray-500" />
                       </div>
                       <div className="ml-4">
-                        {editingUser && editingUser.id === user.id ? (
-                          <input
-                            type="text"
-                            value={editingUser.full_name || ''}
-                            onChange={(e) => setEditingUser({...editingUser, full_name: e.target.value})}
-                            className="border border-gray-300 rounded px-2 py-1 text-sm"
-                          />
+                        {editingUser && editingUser.id===user.id ? (
+                          <div className="space-y-1">
+                            <input
+                              type="text"
+                              value={editingUser.full_name || ''}
+                              onChange={(e)=> setEditingUser({...editingUser,full_name: e.target.value})}
+                              className="border border-gray-300 rounded px-2 py-1 text-sm w-full"
+                              placeholder="Full name"
+                            />
+                            <input
+                              type="text"
+                              value={editingUser.nickname || ''}
+                              onChange={(e)=> setEditingUser({...editingUser,nickname: e.target.value})}
+                              className="border border-gray-300 rounded px-2 py-1 text-sm w-full"
+                              placeholder="Display name"
+                            />
+                          </div>
                         ) : (
                           <>
                             <div className="text-sm font-medium text-gray-900">{user.full_name || 'Unnamed User'}</div>
@@ -298,10 +407,10 @@ const UserManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {editingUser && editingUser.id === user.id ? (
+                    {editingUser && editingUser.id===user.id ? (
                       <select
                         value={editingUser.role || 'user'}
-                        onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                        onChange={(e)=> setEditingUser({...editingUser,role: e.target.value})}
                         className="border border-gray-300 rounded px-2 py-1 text-sm"
                       >
                         <option value="user">User</option>
@@ -318,42 +427,42 @@ const UserManagement = () => {
                     <div className="flex items-center">
                       <SafeIcon icon={FiCalendar} className="text-gray-400 mr-2" />
                       <span className="text-sm text-gray-500">
-                        {format(new Date(user.created_at), 'MMM dd, yyyy')}
+                        {format(new Date(user.created_at),'MMM dd,yyyy')}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {editingUser && editingUser.id === user.id ? (
+                    {editingUser && editingUser.id===user.id ? (
                       <select
-                        value={editingUser.is_active === false ? 'inactive' : 'active'}
-                        onChange={(e) => setEditingUser({...editingUser, is_active: e.target.value === 'active'})}
+                        value={editingUser.is_active===false ? 'inactive' : 'active'}
+                        onChange={(e)=> setEditingUser({...editingUser,is_active: e.target.value==='active'})}
                         className="border border-gray-300 rounded px-2 py-1 text-sm"
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                       </select>
                     ) : (
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.is_active === false ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {user.is_active === false ? 'Inactive' : 'Active'}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.is_active===false ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {user.is_active===false ? 'Inactive' : 'Active'}
                       </span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {editingUser && editingUser.id === user.id ? (
+                    {editingUser && editingUser.id===user.id ? (
                       <div className="flex items-center justify-end space-x-2">
                         <button
-                          onClick={() => handleUpdateUser(user.id, editingUser)}
-                          className="text-green-600 hover:text-green-900"
+                          onClick={()=> handleUpdateUser(user.id,editingUser)}
+                          className="text-green-600 hover:text-green-900 p-1"
+                          title="Save Changes"
                         >
                           <SafeIcon icon={FiSave} />
                         </button>
                         <button
-                          onClick={() => setEditingUser(null)}
-                          className="text-gray-600 hover:text-gray-900"
+                          onClick={handleCancelEdit}
+                          className="text-gray-600 hover:text-gray-900 p-1"
+                          title="Cancel"
                         >
                           <SafeIcon icon={FiX} />
                         </button>
@@ -361,17 +470,17 @@ const UserManagement = () => {
                     ) : (
                       <div className="flex items-center justify-end space-x-2">
                         <button
-                          onClick={() => setEditingUser({...user})}
-                          className="text-blue-600 hover:text-blue-900"
+                          onClick={()=> setEditingUser({...user})}
+                          className="text-blue-600 hover:text-blue-900 p-1"
                           title="Edit User"
                         >
                           <SafeIcon icon={FiEdit3} />
                         </button>
-                        {user.id !== userProfile?.id && (
+                        {user.id !==userProfile?.id && (
                           <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete User"
+                            onClick={()=> handleDeleteUser(user.id)}
+                            className="text-red-600 hover:text-red-900 p-1"
+                            title="Deactivate User"
                           >
                             <SafeIcon icon={FiTrash2} />
                           </button>
@@ -381,7 +490,7 @@ const UserManagement = () => {
                   </td>
                 </tr>
               ))}
-              {filteredUsers.length === 0 && (
+              {filteredUsers.length===0 && (
                 <tr>
                   <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
                     No users found matching your criteria

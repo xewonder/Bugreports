@@ -12,6 +12,7 @@
     "postbuild": "echo 'Build completed successfully'"
   },
   "dependencies": {
+    "@questlabs/react-sdk": "^2.1.15",
     "@supabase/supabase-js": "^2.39.0",
     "react": "^18.3.1",
     "react-router-dom": "^7.1.0",

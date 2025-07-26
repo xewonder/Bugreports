@@ -32,8 +32,8 @@ export function AuthProvider({children}) {
       if (fetchError || !profile) {
         // Determine role based on email
         const role=email==='admin@mgg.com' ? 'admin' : email==='tech@mgg.com' ? 'developer' : 'user'
-
-        // Create new profile
+        
+        // Create new profile with notifications field
         const {data: newProfile,error: insertError}=await supabase
           .from('profiles_mgg_2024')
           .insert([{
@@ -42,7 +42,15 @@ export function AuthProvider({children}) {
             full_name: metadata.full_name || email.split('@')[0],
             nickname: metadata.nickname || metadata.full_name || email.split('@')[0],
             role: role,
-            is_active: true
+            is_active: true,
+            notifications: {
+              email: true,
+              push: false,
+              bugUpdates: true,
+              comments: true,
+              roadmapChanges: true,
+              systemAnnouncements: true
+            }
           }])
           .select()
           .single()
@@ -50,7 +58,7 @@ export function AuthProvider({children}) {
         if (insertError) throw insertError
         profile=newProfile
       }
-
+      
       return profile
     } catch (error) {
       console.error('Profile error:',error)
@@ -65,35 +73,41 @@ export function AuthProvider({children}) {
     const initializeAuth=async ()=> {
       try {
         console.log('🔄 Initializing auth...')
-
+        
         // Get initial session
         const {data: {session},error: sessionError}=await supabase.auth.getSession()
+        
         if (sessionError) throw sessionError
-
+        
         if (session?.user) {
           console.log('✅ Found existing session')
           setUser(session.user)
+          
           const profile=await getOrCreateProfile(
             session.user.id,
             session.user.email,
             session.user.user_metadata
           )
+          
           setUserProfile(profile)
           console.log('✅ Profile loaded:',profile.nickname || profile.full_name)
         } else {
           console.log('ℹ️ No existing session found')
         }
-
+        
         // Listen for auth changes
         authListener=supabase.auth.onAuthStateChange(async (event,session)=> {
           console.log('🔄 Auth state change:',event)
+          
           if (event==='SIGNED_IN' && session?.user) {
             setUser(session.user)
+            
             const profile=await getOrCreateProfile(
               session.user.id,
               session.user.email,
               session.user.user_metadata
             )
+            
             setUserProfile(profile)
           } else if (event==='SIGNED_OUT') {
             clearAuthState()
@@ -110,7 +124,7 @@ export function AuthProvider({children}) {
     }
 
     initializeAuth()
-
+    
     return ()=> {
       mounted.current=false
       if (authListener) authListener.subscription.unsubscribe()
@@ -123,14 +137,15 @@ export function AuthProvider({children}) {
       setLoading(true)
       setError(null)
       console.log('🔄 Signing in...')
-
+      
       const {data,error}=await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
       })
-
+      
       if (error) throw error
       console.log('✅ Sign in successful')
+      
       return {data}
     } catch (error) {
       console.error('❌ Sign in error:',error)
@@ -147,7 +162,7 @@ export function AuthProvider({children}) {
       setLoading(true)
       setError(null)
       console.log('🔄 Signing up...')
-
+      
       const {data,error}=await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -158,9 +173,10 @@ export function AuthProvider({children}) {
           }
         }
       })
-
+      
       if (error) throw error
       console.log('✅ Sign up successful')
+      
       return {data}
     } catch (error) {
       console.error('❌ Sign up error:',error)
@@ -191,6 +207,7 @@ export function AuthProvider({children}) {
         email.trim(),
         {redirectTo: `${window.location.origin}/reset-password`}
       )
+      
       if (error) throw error
       return {data}
     } catch (error) {
@@ -205,8 +222,22 @@ export function AuthProvider({children}) {
     if (!userProfile || userProfile.id !==userId) {
       return {error: {message: 'Cannot update profile: user not authenticated'}}
     }
-
+    
     try {
+      console.log('Updating profile for user:',userId,'with:',updates);
+      
+      // Check if user exists first
+      const {data: existingUser,error: checkError}=await supabase
+        .from('profiles_mgg_2024')
+        .select('id')
+        .eq('id',userId)
+        .single();
+        
+      if (checkError || !existingUser) {
+        throw new Error('User profile not found');
+      }
+      
+      // Perform the update
       const {data,error}=await supabase
         .from('profiles_mgg_2024')
         .update({
@@ -214,16 +245,24 @@ export function AuthProvider({children}) {
           updated_at: new Date().toISOString()
         })
         .eq('id',userId)
-        .select()
-        .single()
-
-      if (error) throw error
-      setUserProfile(data)
-      return {data}
+        .select();
+        
+      if (error) throw error;
+      
+      // Check if any data was returned
+      if (!data || data.length===0) {
+        throw new Error('No profile was updated');
+      }
+      
+      // Update local state with the first item from the returned data array
+      setUserProfile({...userProfile,...data[0]});
+      console.log('✅ Profile updated successfully');
+      
+      return {data: data[0]};
     } catch (error) {
-      console.error('Update profile error:',error)
-      setError(error.message)
-      return {error}
+      console.error('Update profile error:',error);
+      setError(error.message);
+      return {error};
     }
   }
 
@@ -232,8 +271,24 @@ export function AuthProvider({children}) {
     if (!isAdmin()) {
       return {error: {message: 'Only admins can update user roles'}}
     }
-
+    
     try {
+      console.log('Updating role for user:',userId,'to:',newRole);
+      
+      // Check if user exists first
+      const {data: existingUser,error: checkError}=await supabase
+        .from('profiles_mgg_2024')
+        .select('id,email,role')
+        .eq('id',userId)
+        .single();
+        
+      if (checkError || !existingUser) {
+        throw new Error('User not found');
+      }
+      
+      console.log('Found user to update:',existingUser);
+      
+      // Perform the role update
       const {data,error}=await supabase
         .from('profiles_mgg_2024')
         .update({
@@ -241,14 +296,23 @@ export function AuthProvider({children}) {
           updated_at: new Date().toISOString()
         })
         .eq('id',userId)
-        .select()
-        .single()
-
-      if (error) throw error
-      return {data}
+        .select();
+        
+      if (error) {
+        console.error('Role update error:',error);
+        throw error;
+      }
+      
+      // Check if any data was returned
+      if (!data || data.length===0) {
+        throw new Error('No user role was updated');
+      }
+      
+      console.log('✅ Role updated successfully:',data[0]);
+      return {data: data[0]};
     } catch (error) {
-      console.error('Update user role error:',error)
-      return {error}
+      console.error('Update user role error:',error);
+      return {error};
     }
   }
 

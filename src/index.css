@@ -171,3 +171,27 @@ body {
   position: fixed !important;
   z-index: 999999 !important;
 }
+
+/* CRITICAL: Help Hub z-index - Must be higher than everything else */
+.quest-help-hub,
+.quest-help-hub *,
+[data-quest-help-hub],
+[data-quest-help-hub] * {
+  z-index: 9999999 !important;
+  position: relative !important;
+}
+
+/* Ensure Help Hub button is always clickable */
+.quest-help-hub-button {
+  position: fixed !important;
+  z-index: 9999999 !important;
+  pointer-events: auto !important;
+}
+
+/* Help Hub modal/popup should be above everything */
+.quest-help-hub-modal,
+.quest-help-hub-popup,
+.quest-help-hub-chat {
+  position: fixed !important;
+  z-index: 9999999 !important;
+}

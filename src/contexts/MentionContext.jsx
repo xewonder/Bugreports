@@ -1,225 +1,201 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { useAuth } from './AuthContext';
+import React,{createContext,useState,useContext,useEffect,useCallback} from 'react';
+import {useAuth} from './AuthContext';
 import UserMention from '../components/UserMention';
 import supabase from '../lib/supabase';
 
-const MentionContext = createContext();
+const MentionContext=createContext();
 
-export function MentionProvider({ children }) {
-  const { userProfile } = useAuth();
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [mentionSuggestions, setMentionSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState('');
-  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [mentionsTableExists, setMentionsTableExists] = useState(false);
+export function MentionProvider({children}) {
+  const {userProfile}=useAuth();
+  const [users,setUsers]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [mentionSuggestions,setMentionSuggestions]=useState([]);
+  const [showSuggestions,setShowSuggestions]=useState(false);
+  const [mentionQuery,setMentionQuery]=useState('');
+  const [mentionPosition,setMentionPosition]=useState({top: 0,left: 0});
+  const [selectedIndex,setSelectedIndex]=useState(0);
+  const [mentionsTableExists,setMentionsTableExists]=useState(false);
 
   // Check if mentions table exists
-  useEffect(() => {
-    const checkMentionsTable = async () => {
+  useEffect(()=> {
+    const checkMentionsTable=async ()=> {
       try {
-        const { data, error } = await supabase
+        const {data,error}=await supabase
           .from('user_mentions_mgg2024')
           .select('id')
           .limit(1)
           .maybeSingle();
-
-        const exists = !error || error.code !== '42P01';
-        console.log('Mentions table exists:', exists);
+        const exists=!error || error.code !=='42P01';
+        console.log('Mentions table exists:',exists);
         setMentionsTableExists(exists);
       } catch (error) {
-        console.log('Mentions table may not exist yet:', error);
+        console.log('Mentions table may not exist yet:',error);
         setMentionsTableExists(false);
       }
     };
-
     checkMentionsTable();
-  }, []);
+  },[]);
 
   // Fetch all users for mention suggestions
-  useEffect(() => {
-    const fetchUsers = async () => {
+  useEffect(()=> {
+    const fetchUsers=async ()=> {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        const {data,error}=await supabase
           .from('profiles_mgg_2024')
-          .select('id, full_name, nickname, role')
-          .eq('is_active', true);
-
+          .select('id,full_name,nickname,role')
+          .eq('is_active',true);
         if (error) throw error;
-        console.log("Fetched users for mentions:", data?.length || 0, "users");
+        console.log("Fetched users for mentions:",data?.length || 0,"users");
         setUsers(data || []);
       } catch (error) {
-        console.error('Error fetching users for mentions:', error);
+        console.error('Error fetching users for mentions:',error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchUsers();
-  }, []);
+  },[]);
 
-  const searchUsers = useCallback((query) => {
-    console.log("🔍 Searching users with query:", query);
-    
-    if (!query || query.trim().length === 0) {
-      console.log("Empty query, clearing suggestions");
+  const searchUsers=useCallback((query)=> {
+    console.log("🔍 Searching users with query:",query);
+    if (!query || query.trim().length===0) {
+      console.log("Empty query,clearing suggestions");
       setMentionSuggestions([]);
       return;
     }
-
-    const lowerQuery = query.toLowerCase().trim();
-    const filtered = users
-      .filter(user => {
+    
+    const lowerQuery=query.toLowerCase().trim();
+    const filtered=users
+      .filter(user=> {
         // Don't suggest the current user
-        if (userProfile && user.id === userProfile.id) return false;
-
-        const nickname = user.nickname?.toLowerCase() || '';
-        const fullName = user.full_name?.toLowerCase() || '';
+        if (userProfile && user.id===userProfile.id) return false;
+        const nickname=user.nickname?.toLowerCase() || '';
+        const fullName=user.full_name?.toLowerCase() || '';
         return nickname.includes(lowerQuery) || fullName.includes(lowerQuery);
       })
-      .slice(0, 5); // Limit to 5 suggestions
-
-    console.log("🎯 Found filtered users:", filtered);
+      .slice(0,5); // Limit to 5 suggestions
+    
+    console.log("🎯 Found filtered users:",filtered);
     setMentionSuggestions(filtered);
     setSelectedIndex(0);
-  }, [users, userProfile]);
+  },[users,userProfile]);
 
-  const handleMentionInput = useCallback((e, textAreaRef) => {
+  const handleMentionInput=useCallback((e,textAreaRef)=> {
     if (!textAreaRef || !textAreaRef.current) {
       console.log("❌ No textarea ref available");
       return;
     }
-
-    const textarea = textAreaRef.current;
-    const text = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-
-    console.log("⌨️ Mention input handler called:", { 
-      text, 
-      cursorPosition, 
-      eventType: e.type,
-      textLength: text.length
-    });
-
+    
+    const textarea=textAreaRef.current;
+    const text=textarea.value;
+    const cursorPosition=textarea.selectionStart;
+    console.log("⌨️ Mention input handler called:",{text,cursorPosition,eventType: e.type,textLength: text.length});
+    
     // Find the last @ symbol before cursor
-    const lastAtIndex = text.lastIndexOf('@', cursorPosition - 1);
-    console.log("📍 Last @ index:", lastAtIndex);
-
-    if (lastAtIndex >= 0 && lastAtIndex < cursorPosition) {
+    const lastAtIndex=text.lastIndexOf('@',cursorPosition - 1);
+    console.log("📍 Last @ index:",lastAtIndex);
+    
+    if (lastAtIndex >=0 && lastAtIndex < cursorPosition) {
       // Get text between @ and cursor
-      const textBetween = text.substring(lastAtIndex, cursorPosition);
-      const hasSpace = /\s/.test(textBetween.substring(1));
-
-      console.log("📝 Text between @ and cursor:", textBetween, "Has space:", hasSpace);
-
-      // If there's no space after @, it's a valid mention query
+      const textBetween=text.substring(lastAtIndex,cursorPosition);
+      const hasSpace=/\s/.test(textBetween.substring(1));
+      console.log("📝 Text between @ and cursor:",textBetween,"Has space:",hasSpace);
+      
+      // If there's no space after @,it's a valid mention query
       if (!hasSpace) {
-        const query = textBetween.substring(1); // Remove the @ symbol
-        console.log("✅ Valid mention query found:", query);
-
+        const query=textBetween.substring(1); // Remove the @ symbol
+        console.log("✅ Valid mention query found:",query);
         setMentionQuery(query);
         searchUsers(query);
-
+        
         // Calculate position for dropdown with better accuracy
-        const rect = textarea.getBoundingClientRect();
-        const computedStyle = window.getComputedStyle(textarea);
-        const lineHeight = parseInt(computedStyle.lineHeight) || 20;
-        const fontSize = parseInt(computedStyle.fontSize) || 14;
-
+        const rect=textarea.getBoundingClientRect();
+        const computedStyle=window.getComputedStyle(textarea);
+        const lineHeight=parseInt(computedStyle.lineHeight) || 20;
+        const fontSize=parseInt(computedStyle.fontSize) || 14;
+        
         // Calculate approximate character width
-        const charWidth = fontSize * 0.6; // Rough estimation
-
+        const charWidth=fontSize * 0.6; // Rough estimation
+        
         // Calculate text before the @ to determine position
-        const textBeforeCursor = text.substring(0, lastAtIndex);
-        const lines = textBeforeCursor.split('\n');
-        const lineNumber = lines.length - 1; // 0-indexed
-        const charPositionInLine = lines[lineNumber].length;
-
+        const textBeforeCursor=text.substring(0,lastAtIndex);
+        const lines=textBeforeCursor.split('\n');
+        const lineNumber=lines.length - 1; // 0-indexed
+        const charPositionInLine=lines[lineNumber].length;
+        
         // Position calculation with better accuracy
-        const top = rect.top + ((lineNumber + 1) * lineHeight) + window.scrollY + 5;
-        const left = Math.min(
+        const top=rect.top + ((lineNumber + 1) * lineHeight) + window.scrollY + 5;
+        const left=Math.min(
           rect.left + (charPositionInLine * charWidth) + window.scrollX,
           window.innerWidth - 280 // Ensure dropdown doesn't go off-screen
         );
-
-        console.log("📍 Setting mention position:", { top, left, rect, lineNumber, charPositionInLine });
-
-        setMentionPosition({ top, left });
-        setShowSuggestions(true);
         
+        console.log("📍 Setting mention position:",{top,left,rect,lineNumber,charPositionInLine});
+        setMentionPosition({top,left});
+        setShowSuggestions(true);
         return;
       }
     }
-
+    
     // Hide suggestions if no @ or there's a space
     console.log("❌ Hiding suggestions - no valid @ found");
     setShowSuggestions(false);
-  }, [searchUsers]);
+  },[searchUsers]);
 
-  const insertMention = useCallback((user, textAreaRef) => {
-    console.log("🎯 Inserting mention for user:", user);
-    
+  const insertMention=useCallback((user,textAreaRef)=> {
+    console.log("🎯 Inserting mention for user:",user);
     if (!textAreaRef || !textAreaRef.current) return;
-
-    const textarea = textAreaRef.current;
-    const text = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-
+    
+    const textarea=textAreaRef.current;
+    const text=textarea.value;
+    const cursorPosition=textarea.selectionStart;
+    
     // Find the last @ symbol before cursor
-    const lastAtIndex = text.lastIndexOf('@', cursorPosition - 1);
-
-    if (lastAtIndex >= 0) {
+    const lastAtIndex=text.lastIndexOf('@',cursorPosition - 1);
+    
+    if (lastAtIndex >=0) {
       // Replace @query with @[username](userId)
-      const beforeMention = text.substring(0, lastAtIndex);
-      const afterMention = text.substring(cursorPosition);
-      const displayName = user.nickname || user.full_name;
-
+      const beforeMention=text.substring(0,lastAtIndex);
+      const afterMention=text.substring(cursorPosition);
+      const displayName=user.nickname || user.full_name;
+      
       // Use the format @[username](userId) for better parsing
-      const newText = `${beforeMention}@[${displayName}](${user.id})${afterMention}`;
-
-      console.log("✏️ Inserting mention:", { 
-        displayName, 
-        beforeMention, 
-        afterMention, 
-        lastAtIndex, 
-        cursorPosition,
-        newText 
-      });
-
+      const newText=`${beforeMention}@[${displayName}](${user.id})${afterMention}`;
+      
+      console.log("✏️ Inserting mention:",{displayName,beforeMention,afterMention,lastAtIndex,cursorPosition,newText});
+      
       // Update textarea value
-      textarea.value = newText;
-
+      textarea.value=newText;
+      
       // Move cursor after the inserted mention
-      const newCursorPosition = lastAtIndex + `@[${displayName}](${user.id})`.length;
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-
+      const newCursorPosition=lastAtIndex + `@[${displayName}](${user.id})`.length;
+      textarea.setSelectionRange(newCursorPosition,newCursorPosition);
+      
       // Trigger change event to update React state
-      const event = new Event('input', { bubbles: true });
+      const event=new Event('input',{bubbles: true});
       textarea.dispatchEvent(event);
-
+      
       // Hide suggestions
       setShowSuggestions(false);
     }
-  }, []);
+  },[]);
 
   // Store mention data when a mention is made
-  const storeMention = async (mentionedUserId, contentType, contentId) => {
-    if (!userProfile || !mentionedUserId || userProfile.id === mentionedUserId || !mentionsTableExists) return;
-
+  const storeMention=async (mentionedUserId,contentType,contentId)=> {
+    if (!userProfile || !mentionedUserId || userProfile.id===mentionedUserId || !mentionsTableExists) return;
+    
     try {
-      console.log("💾 Storing mention:", { mentionedUserId, contentType, contentId });
-
+      console.log("💾 Storing mention:",{mentionedUserId,contentType,contentId});
+      
       // Check if content ID is valid
       if (!contentId) {
-        console.error('Invalid contentId for mention:', contentId);
+        console.error('Invalid contentId for mention:',contentId);
         return;
       }
-
+      
       // Insert the mention
-      const { data, error } = await supabase
+      const {data,error}=await supabase
         .from('user_mentions_mgg2024')
         .insert({
           mentioned_user_id: mentionedUserId,
@@ -227,83 +203,82 @@ export function MentionProvider({ children }) {
           content_type: contentType,
           content_id: contentId
         });
-
+      
       if (error) {
-        console.error('Error storing mention:', error);
+        console.error('Error storing mention:',error);
       } else {
-        console.log('✅ Mention stored successfully:', data);
+        console.log('✅ Mention stored successfully:',data);
       }
     } catch (error) {
-      console.error('Error storing mention:', error);
+      console.error('Error storing mention:',error);
     }
   };
 
   // Extract mentions from text
-  const extractMentions = (text) => {
+  const extractMentions=(text)=> {
     if (!text) return [];
-
+    
     // Match @[username](userId) patterns
-    const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
-    const mentions = [];
+    const mentionRegex=/@\[([^\]]+)\]\(([^)]+)\)/g;
+    const mentions=[];
     let match;
-
-    console.log("🔍 Extracting mentions from text:", text);
-
-    while ((match = mentionRegex.exec(text)) !== null) {
-      const username = match[1].trim();
-      const userId = match[2];
-      console.log("👤 Found mention:", username, userId);
-
+    
+    console.log("🔍 Extracting mentions from text:",text);
+    
+    while ((match=mentionRegex.exec(text)) !==null) {
+      const username=match[1].trim();
+      const userId=match[2];
+      console.log("👤 Found mention:",username,userId);
       mentions.push({
         userId: userId,
         username: username,
         index: match.index
       });
     }
-
+    
     return mentions;
   };
 
   // Process mentions after content is submitted
-  const processMentions = (text, contentType, contentId) => {
+  const processMentions=(text,contentType,contentId)=> {
     if (!text || !mentionsTableExists) return [];
-
-    console.log("⚙️ Processing mentions in text:", text);
-    console.log("📋 Content type:", contentType, "Content ID:", contentId);
-
-    const mentions = extractMentions(text);
-    console.log("📝 Extracted mentions:", mentions);
-
+    
+    console.log("⚙️ Processing mentions in text:",text);
+    console.log("📋 Content type:",contentType,"Content ID:",contentId);
+    
+    const mentions=extractMentions(text);
+    console.log("📝 Extracted mentions:",mentions);
+    
     // Store each mention
-    mentions.forEach(mention => {
-      storeMention(mention.userId, contentType, contentId);
+    mentions.forEach(mention=> {
+      storeMention(mention.userId,contentType,contentId);
     });
-
+    
     return mentions;
   };
 
   // Render function for parsing text with mentions
-  const renderWithMentions = (text) => {
+  const renderWithMentions=(text)=> {
     if (!text) return null;
-
+    
     // Use regex to match @[username](userId) format
-    const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
-    const parts = [];
-    let lastIndex = 0;
+    const mentionRegex=/@\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts=[];
+    let lastIndex=0;
     let match;
-
+    
     // Clone the text to avoid modification issues
-    const textStr = String(text);
-
-    while ((match = mentionRegex.exec(textStr)) !== null) {
-      const username = match[1].trim();
-      const userId = match[2];
-
+    const textStr=String(text);
+    
+    while ((match=mentionRegex.exec(textStr)) !==null) {
+      const username=match[1].trim();
+      const userId=match[2];
+      
       // Add text before mention
       if (match.index > lastIndex) {
-        parts.push(textStr.substring(lastIndex, match.index));
+        parts.push(textStr.substring(lastIndex,match.index));
       }
-
+      
       // Add mention component
       parts.push(
         <UserMention
@@ -312,19 +287,19 @@ export function MentionProvider({ children }) {
           username={username}
         />
       );
-
-      lastIndex = match.index + match[0].length;
+      
+      lastIndex=match.index + match[0].length;
     }
-
+    
     // Add remaining text
     if (lastIndex < textStr.length) {
       parts.push(textStr.substring(lastIndex));
     }
-
+    
     return parts.length > 0 ? parts : text;
   };
 
-  const value = {
+  const value={
     users,
     loading,
     mentionSuggestions,
