@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useMention } from '../contexts/MentionContext';
 import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
 import EnhancedTextarea from './EnhancedTextarea';
 import MentionSuggestions from './MentionSuggestions';
-import { useMention } from '../contexts/MentionContext';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -62,7 +62,6 @@ const TipsAndTricks = () => {
     try {
       setLoading(true);
       console.log("Fetching tips and tricks...");
-      
       // Direct table approach
       const { data, error } = await supabase
         .from('tips_and_tricks_mgg2024')
@@ -71,30 +70,25 @@ const TipsAndTricks = () => {
 
       if (error) throw error;
 
-      // Enhance tips with user data
+      // Enhance tips with user data if we have data
       if (data && data.length > 0) {
         const enhancedData = await Promise.all(data.map(async (tip) => {
           const { data: userData, error: userError } = await supabase
             .from('profiles_mgg_2024')
-            .select('full_name, nickname, role')
+            .select('full_name,nickname,role')
             .eq('id', tip.user_id)
             .single();
 
           if (userError) {
             console.warn('Error fetching user data for tip:', userError);
-            return {
-              ...tip,
-              user_full_name: 'Unknown',
-              user_nickname: 'User',
-              user_role: 'user'
-            };
+            return { ...tip, user_full_name: 'Unknown', user_nickname: 'User', user_role: 'user' };
           }
-
-          return {
-            ...tip,
-            user_full_name: userData?.full_name || 'Unknown',
-            user_nickname: userData?.nickname || 'User',
-            user_role: userData?.role || 'user'
+          
+          return { 
+            ...tip, 
+            user_full_name: userData?.full_name || 'Unknown', 
+            user_nickname: userData?.nickname || 'User', 
+            user_role: userData?.role || 'user' 
           };
         }));
 
@@ -102,15 +96,12 @@ const TipsAndTricks = () => {
       } else {
         setTips([]);
       }
-
+      
       await fetchVotes();
       await fetchAllCommentCounts(data || []);
     } catch (error) {
       console.error('Error fetching tips and tricks:', error);
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to load tips and tricks: ' + error.message
-      });
+      setStatusMessage({ type: 'error', message: 'Failed to load tips and tricks: ' + error.message });
     } finally {
       setLoading(false);
     }
@@ -118,7 +109,7 @@ const TipsAndTricks = () => {
 
   const fetchAllCommentCounts = async (tipsList) => {
     if (!tipsList || tipsList.length === 0) return;
-
+    
     try {
       const { data: commentsData, error } = await supabase
         .from('tips_comments_mgg2024')
@@ -139,7 +130,6 @@ const TipsAndTricks = () => {
         });
       }
 
-      console.log('Tip comment counts:', counts);
       setCommentCounts(counts);
     } catch (error) {
       console.error('Error fetching comment counts:', error);
@@ -162,25 +152,20 @@ const TipsAndTricks = () => {
       const enhancedComments = await Promise.all((data || []).map(async (comment) => {
         const { data: userData, error: userError } = await supabase
           .from('profiles_mgg_2024')
-          .select('full_name, nickname, role')
+          .select('full_name,nickname,role')
           .eq('id', comment.user_id)
           .single();
 
         if (userError) {
           console.warn('Error fetching user data for comment:', userError);
-          return {
-            ...comment,
-            user_full_name: 'Unknown',
-            user_nickname: 'User',
-            user_role: 'user'
-          };
+          return { ...comment, user_full_name: 'Unknown', user_nickname: 'User', user_role: 'user' };
         }
-
-        return {
-          ...comment,
-          user_full_name: userData?.full_name || 'Unknown',
-          user_nickname: userData?.nickname || 'User',
-          user_role: userData?.role || 'user'
+        
+        return { 
+          ...comment, 
+          user_full_name: userData?.full_name || 'Unknown', 
+          user_nickname: userData?.nickname || 'User', 
+          user_role: userData?.role || 'user' 
         };
       }));
 
@@ -221,27 +206,24 @@ const TipsAndTricks = () => {
 
   const handleSubmitTip = async (e) => {
     e.preventDefault();
-
+    
     // Validate form
     const errors = {};
     if (!form.title.trim()) errors.title = 'Title is required';
     if (!form.content.trim()) errors.content = 'Content is required';
-
+    
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
-
+    
     if (!userProfile) {
-      setStatusMessage({
-        type: 'error',
-        message: 'You must be logged in to create a tip'
-      });
+      setStatusMessage({ type: 'error', message: 'You must be logged in to create a tip' });
       return;
     }
-
+    
     setFormSubmitting(true);
-
+    
     try {
       if (editingTip) {
         // Update existing tip
@@ -258,10 +240,13 @@ const TipsAndTricks = () => {
 
         if (error) throw error;
 
+        // Process mentions in the tip content
+        processMentions(form.content.trim(), 'tip', editingTip.id);
+        
         // Get user data to enhance the updated tip
         const { data: userData, error: userError } = await supabase
           .from('profiles_mgg_2024')
-          .select('full_name, nickname, role')
+          .select('full_name,nickname,role')
           .eq('id', editingTip.user_id)
           .single();
 
@@ -274,7 +259,10 @@ const TipsAndTricks = () => {
           user_role: userData?.role || 'user'
         };
 
-        setTips(prev => prev.map(tip => tip.id === editingTip.id ? updatedTip : tip));
+        setTips(prev => prev.map(tip => 
+          tip.id === editingTip.id ? updatedTip : tip
+        ));
+
         setStatusMessage({ type: 'success', message: 'Tip updated successfully!' });
       } else {
         // Create new tip
@@ -291,14 +279,14 @@ const TipsAndTricks = () => {
           .select();
 
         if (error) throw error;
-
+        
         // Process mentions in the tip content
         processMentions(form.content.trim(), 'tip', data[0].id);
 
         // Get user data to enhance the new tip
         const { data: userData, error: userError } = await supabase
           .from('profiles_mgg_2024')
-          .select('full_name, nickname, role')
+          .select('full_name,nickname,role')
           .eq('id', userProfile.id)
           .single();
 
@@ -315,21 +303,18 @@ const TipsAndTricks = () => {
         setCommentCounts(prev => ({ ...prev, [data[0].id]: 0 }));
         setStatusMessage({ type: 'success', message: 'Tip created successfully!' });
       }
-
+      
       setForm({ title: '', content: '' });
       setFormAttachments([]);
       setShowForm(false);
       setEditingTip(null);
-
+      
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
     } catch (error) {
       console.error('Error submitting tip:', error);
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to submit tip: ' + error.message
-      });
+      setStatusMessage({ type: 'error', message: 'Failed to submit tip: ' + error.message });
     } finally {
       setFormSubmitting(false);
     }
@@ -337,16 +322,13 @@ const TipsAndTricks = () => {
 
   const handleVote = async (tipId) => {
     if (!userProfile) {
-      setStatusMessage({
-        type: 'error',
-        message: 'You must be logged in to vote'
-      });
+      setStatusMessage({ type: 'error', message: 'You must be logged in to vote' });
       return;
     }
-
+    
     try {
       const hasVoted = votes.userVotes?.[tipId];
-
+      
       if (hasVoted) {
         // Remove vote
         const { error } = await supabase
@@ -356,7 +338,7 @@ const TipsAndTricks = () => {
           .eq('user_id', userProfile.id);
 
         if (error) throw error;
-
+        
         setVotes(prev => ({
           counts: { ...prev.counts, [tipId]: Math.max(0, (prev.counts[tipId] || 0) - 1) },
           userVotes: { ...prev.userVotes, [tipId]: false }
@@ -372,7 +354,7 @@ const TipsAndTricks = () => {
           }]);
 
         if (error) throw error;
-
+        
         setVotes(prev => ({
           counts: { ...prev.counts, [tipId]: (prev.counts[tipId] || 0) + 1 },
           userVotes: { ...prev.userVotes, [tipId]: true }
@@ -380,10 +362,7 @@ const TipsAndTricks = () => {
       }
     } catch (error) {
       console.error('Error voting on tip:', error);
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to update vote: ' + error.message
-      });
+      setStatusMessage({ type: 'error', message: 'Failed to update vote: ' + error.message });
     }
   };
 
@@ -391,7 +370,7 @@ const TipsAndTricks = () => {
     const text = newComment[tipId];
     if (!text || !text.trim()) return;
     if (!userProfile) return;
-
+    
     try {
       const { data, error } = await supabase
         .from('tips_comments_mgg2024')
@@ -404,14 +383,14 @@ const TipsAndTricks = () => {
         .select();
 
       if (error) throw error;
-
+      
       // Process mentions in the comment
       processMentions(text.trim(), 'tip_comment', tipId);
 
       // Enhance the comment with user data
       const { data: userData, error: userError } = await supabase
         .from('profiles_mgg_2024')
-        .select('full_name, nickname, role')
+        .select('full_name,nickname,role')
         .eq('id', userProfile.id)
         .single();
 
@@ -424,30 +403,27 @@ const TipsAndTricks = () => {
         user_role: userData?.role || 'user'
       };
 
-      setComments(prev => ({
-        ...prev,
-        [tipId]: [...(prev[tipId] || []), newCommentWithUser]
+      setComments(prev => ({ 
+        ...prev, 
+        [tipId]: [...(prev[tipId] || []), newCommentWithUser] 
       }));
       setCommentCounts(prev => ({ ...prev, [tipId]: (prev[tipId] || 0) + 1 }));
       setNewComment({ ...newComment, [tipId]: '' });
       setCommentAttachments([]);
-
+      
       setStatusMessage({ type: 'success', message: 'Comment added successfully' });
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
     } catch (error) {
       console.error('Error adding comment:', error);
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to add comment: ' + error.message
-      });
+      setStatusMessage({ type: 'error', message: 'Failed to add comment: ' + error.message });
     }
   };
 
   const handleDeleteComment = async (comment) => {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
-
+    
     try {
       const { error } = await supabase
         .from('tips_comments_mgg2024')
@@ -455,32 +431,29 @@ const TipsAndTricks = () => {
         .eq('id', comment.id);
 
       if (error) throw error;
-
-      setComments(prev => ({
-        ...prev,
-        [comment.tip_id]: (prev[comment.tip_id] || []).filter(c => c.id !== comment.id)
+      
+      setComments(prev => ({ 
+        ...prev, 
+        [comment.tip_id]: (prev[comment.tip_id] || []).filter(c => c.id !== comment.id) 
       }));
-      setCommentCounts(prev => ({
-        ...prev,
-        [comment.tip_id]: Math.max(0, (prev[comment.tip_id] || 1) - 1)
+      setCommentCounts(prev => ({ 
+        ...prev, 
+        [comment.tip_id]: Math.max(0, (prev[comment.tip_id] || 1) - 1) 
       }));
-
+      
       setStatusMessage({ type: 'success', message: 'Comment deleted successfully' });
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
     } catch (error) {
       console.error('Error deleting comment:', error);
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to delete comment'
-      });
+      setStatusMessage({ type: 'error', message: 'Failed to delete comment' });
     }
   };
 
   const handleDeleteTip = async (tipId) => {
     if (!window.confirm('Are you sure you want to delete this tip?')) return;
-
+    
     try {
       const { error } = await supabase
         .from('tips_and_tricks_mgg2024')
@@ -488,18 +461,16 @@ const TipsAndTricks = () => {
         .eq('id', tipId);
 
       if (error) throw error;
-
+      
       setTips(prev => prev.filter(tip => tip.id !== tipId));
+      
       setStatusMessage({ type: 'success', message: 'Tip deleted successfully' });
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
     } catch (error) {
       console.error('Error deleting tip:', error);
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to delete tip'
-      });
+      setStatusMessage({ type: 'error', message: 'Failed to delete tip' });
     }
   };
 
@@ -554,7 +525,7 @@ const TipsAndTricks = () => {
 
   const filteredTips = tips
     .filter(tip => 
-      tip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tip.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       tip.content.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
@@ -717,9 +688,7 @@ const TipsAndTricks = () => {
                     }}
                     placeholder="Share your tip or trick in detail (Type @ to mention users)"
                     minRows={8}
-                    className={`${
-                      formErrors.content ? 'border-red-300' : 'border-gray-300'
-                    } focus:ring-amber-500`}
+                    className={`${formErrors.content ? 'border-red-300' : 'border-gray-300'} focus:ring-amber-500`}
                     disabled={formSubmitting}
                   />
                   <MentionSuggestions textAreaRef={formTextAreaRef} />
@@ -830,7 +799,7 @@ const TipsAndTricks = () => {
                     <p className="text-sm text-gray-500 mb-4">
                       Shared by {getDisplayName(tip)} on{' '}
                       {format(new Date(tip.created_at), 'MMM dd, yyyy')}
-                      {tip.updated_at !== tip.created_at &&
+                      {tip.updated_at !== tip.created_at && 
                         ` (updated ${format(new Date(tip.updated_at), 'MMM dd, yyyy')})`}
                     </p>
                     {/* Tip Content Preview */}
@@ -911,7 +880,7 @@ const TipsAndTricks = () => {
                       {renderWithMentions(tip.content)}
                     </div>
                   </div>
-
+                  
                   {/* Tip Attachments */}
                   {tip.attachments && tip.attachments.length > 0 && (
                     <div className="mb-6">
@@ -928,7 +897,7 @@ const TipsAndTricks = () => {
                       <SafeIcon icon={FiMessageCircle} className="mr-2 text-amber-600" />
                       <span>Comments ({comments[tip.id]?.length || 0})</span>
                     </h4>
-
+                    
                     {/* Comments List */}
                     <div className="space-y-4 max-h-96 overflow-y-auto mb-6 p-1">
                       {loadingComments[tip.id] ? (
@@ -951,7 +920,7 @@ const TipsAndTricks = () => {
                       )}
                       <div ref={commentsEndRef} />
                     </div>
-
+                    
                     {/* Add Comment */}
                     {userProfile ? (
                       <div className="space-y-3">
@@ -964,7 +933,9 @@ const TipsAndTricks = () => {
                             minRows={3}
                             disabled={commentLoading}
                           />
-                          <MentionSuggestions textAreaRef={{ current: commentTextAreaRefs.current[tip.id] }} />
+                          <MentionSuggestions 
+                            textAreaRef={{ current: commentTextAreaRefs.current[tip.id] }} 
+                          />
                         </div>
                         <FileUpload
                           onFilesUploaded={setCommentAttachments}

@@ -139,7 +139,6 @@ const BugDetails = () => {
               user_role: 'user'
             };
           }
-
           return {
             ...comment,
             user_full_name: userData?.full_name || 'Unknown',
@@ -168,10 +167,7 @@ const BugDetails = () => {
       // Check if current user has voted
       const userVoted = userProfile && votesData?.some(vote => vote.user_id === userProfile.id);
 
-      setVotes({
-        count: votesData?.length || 0,
-        userVoted
-      });
+      setVotes({ count: votesData?.length || 0, userVoted });
     } catch (error) {
       console.error('Error fetching votes:', error);
     }
@@ -241,8 +237,9 @@ const BugDetails = () => {
   const handleAddComment = async (text) => {
     if (!text.trim() && commentAttachments.length === 0) return;
     if (!userProfile) return;
-
+    
     setCommentLoading(true);
+    
     try {
       const commentData = {
         bug_id: id,
@@ -250,33 +247,35 @@ const BugDetails = () => {
         user_id: userProfile.id,
         attachments: commentAttachments
       };
-
+      
       const { data, error } = await supabase
         .from('bug_comments_mgg2024')
         .insert([commentData])
         .select();
-
+        
       if (error) throw error;
-
+      
       // Process mentions in the comment
-      processMentions(text, 'bug_comment', id);
-
+      if (text.trim()) {
+        processMentions(text, 'bug_comment', id);
+      }
+      
       // Get user data to enhance the comment
       const { data: userData, error: userError } = await supabase
         .from('profiles_mgg_2024')
         .select('full_name, nickname, role')
         .eq('id', userProfile.id)
         .single();
-
+        
       if (userError) throw userError;
-
+      
       const newComment = {
         ...data[0],
         user_full_name: userData?.full_name || 'Unknown',
         user_nickname: userData?.nickname || 'User',
         user_role: userData?.role || 'user'
       };
-
+      
       setComments([...comments, newComment]);
       setCommentAttachments([]);
     } catch (error) {
@@ -336,11 +335,7 @@ const BugDetails = () => {
         // Add vote
         const { error } = await supabase
           .from('bug_votes_mgg2024')
-          .insert([{
-            bug_id: id,
-            user_id: userProfile.id,
-            vote_type: 'upvote'
-          }]);
+          .insert([{ bug_id: id, user_id: userProfile.id, vote_type: 'upvote' }]);
 
         if (error) throw error;
 

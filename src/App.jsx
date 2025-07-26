@@ -1,7 +1,7 @@
-import React, {useState, useEffect} from 'react'
-import {HashRouter as Router, Routes, Route, Navigate} from 'react-router-dom'
+import React,{useState,useEffect} from 'react'
+import {HashRouter as Router,Routes,Route,Navigate} from 'react-router-dom'
 import {motion} from 'framer-motion'
-import {AuthProvider, useAuth} from './contexts/AuthContext'
+import {AuthProvider,useAuth} from './contexts/AuthContext'
 import {MentionProvider} from './contexts/MentionContext'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
@@ -19,6 +19,7 @@ import TipsAndTricks from './components/TipsAndTricks'
 import GeneralTalk from './components/GeneralTalk'
 import GeneralTalkDebug from './components/GeneralTalkDebug'
 import TestMentions from './components/TestMentions'
+import HelpCenter from './components/HelpCenter'
 import './App.css'
 
 // Error Boundary Component
@@ -53,16 +54,21 @@ class ErrorBoundary extends React.Component {
         </div>
       )
     }
+
     return this.props.children
   }
 }
 
 const AuthenticatedLayout = ({children}) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  
+  const {userProfile} = useAuth()
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+      />
       <motion.div
         className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}
         initial={{opacity: 0}}
@@ -195,6 +201,16 @@ function App() {
                   <ProtectedRoute>
                     <AuthenticatedLayout>
                       <GeneralTalk />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/help"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <HelpCenter />
                     </AuthenticatedLayout>
                   </ProtectedRoute>
                 }

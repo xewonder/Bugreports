@@ -100,79 +100,74 @@ body {
   }
 }
 
-/* Styles for react-mentions */
-.user-suggestion {
-  padding: 8px;
+/* Styles for mentions */
+.user-mention {
+  background-color: #dbeafe;
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+  color: #1d4ed8;
+  font-weight: 500;
   cursor: pointer;
 }
 
-.user-suggestion.focused {
-  background-color: #e0f2fe;
+.user-mention:hover {
+  background-color: #bfdbfe;
 }
 
-/* Add some styling to the mentions input */
-.__input {
-  border: 1px solid #d1d5db !important;
-  border-radius: 0.5rem !important;
-  padding: 0.5rem !important;
-  min-height: 80px !important;
-  width: 100% !important;
+/* Ensure proper stacking context for form elements */
+.form-container {
+  position: relative;
+  z-index: 1;
 }
 
-.__input:focus {
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5) !important;
-  border-color: #3b82f6 !important;
+.form-container .mentions {
+  position: relative;
+  z-index: 1;
 }
 
-/* Style for rendered mentions */
-.__mention {
-  background-color: #dbeafe;
-  border-radius: 0.25rem;
-  padding: 0 0.25rem;
-  color: #1d4ed8;
-  font-weight: 500;
+.form-container button {
+  position: relative;
+  z-index: 2;
 }
 
-/* Fix for react-mentions styles */
+/* Fix for mention suggestions positioning */
 .mentions {
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
-.mentions__input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  min-height: 80px;
-  outline: none;
+/* CRITICAL: Mention suggestions dropdown with highest z-index */
+.mention-suggestions-dropdown {
+  position: fixed !important;
+  z-index: 999999 !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  max-height: 15rem !important;
+  overflow-y: auto !important;
+  width: 16rem !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
-.mentions__suggestions__list {
-  background-color: white;
-  border: 1px solid rgba(0,0,0,0.15);
-  border-radius: 0.25rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  margin-top: 0.5rem;
-  max-height: 200px;
-  overflow: auto;
-  position: absolute;
-  z-index: 100;
+/* Ensure mention dropdown is always visible */
+.mention-suggestions-dropdown * {
+  pointer-events: auto !important;
 }
 
-.mentions__suggestions__item {
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+/* Override any conflicting styles */
+.form-container .mention-suggestions-dropdown {
+  z-index: 999999 !important;
+  position: fixed !important;
 }
 
-.mentions__suggestions__item--focused {
-  background-color: #e0f2fe;
-}
-
-.mentions__mention {
-  background-color: #dbeafe;
-  border-radius: 0.25rem;
-  padding: 0 0.25rem;
-  color: #1d4ed8;
-  font-weight: 500;
+/* Make sure no parent containers hide the dropdown */
+.overflow-hidden .mention-suggestions-dropdown,
+.overflow-y-auto .mention-suggestions-dropdown,
+.relative .mention-suggestions-dropdown {
+  position: fixed !important;
+  z-index: 999999 !important;
 }

@@ -1,18 +1,18 @@
-import React, { createContext, useState, useContext, useEffect, useRef } from 'react'
+import React,{createContext,useState,useContext,useEffect,useRef} from 'react'
 import supabase from '../lib/supabase'
 
-const AuthContext = createContext()
+const AuthContext=createContext()
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [userProfile, setUserProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [initialized, setInitialized] = useState(false)
-  const [error, setError] = useState(null)
-  const mounted = useRef(true)
+export function AuthProvider({children}) {
+  const [user,setUser]=useState(null)
+  const [userProfile,setUserProfile]=useState(null)
+  const [loading,setLoading]=useState(true)
+  const [initialized,setInitialized]=useState(false)
+  const [error,setError]=useState(null)
+  const mounted=useRef(true)
 
   // Clear auth state
-  const clearAuthState = () => {
+  const clearAuthState=()=> {
     setUser(null)
     setUserProfile(null)
     setError(null)
@@ -20,22 +20,21 @@ export function AuthProvider({ children }) {
   }
 
   // Get or create user profile
-  const getOrCreateProfile = async (userId, email, metadata = {}) => {
+  const getOrCreateProfile=async (userId,email,metadata={})=> {
     try {
       // First try to get existing profile
-      let { data: profile, error: fetchError } = await supabase
+      let {data: profile,error: fetchError}=await supabase
         .from('profiles_mgg_2024')
         .select('*')
-        .eq('id', userId)
+        .eq('id',userId)
         .single()
 
       if (fetchError || !profile) {
         // Determine role based on email
-        const role = email === 'admin@mgg.com' ? 'admin' :
-                    email === 'tech@mgg.com' ? 'developer' : 'user'
+        const role=email==='admin@mgg.com' ? 'admin' : email==='tech@mgg.com' ? 'developer' : 'user'
 
         // Create new profile
-        const { data: newProfile, error: insertError } = await supabase
+        const {data: newProfile,error: insertError}=await supabase
           .from('profiles_mgg_2024')
           .insert([{
             id: userId,
@@ -49,60 +48,59 @@ export function AuthProvider({ children }) {
           .single()
 
         if (insertError) throw insertError
-        profile = newProfile
+        profile=newProfile
       }
 
       return profile
     } catch (error) {
-      console.error('Profile error:', error)
+      console.error('Profile error:',error)
       throw error
     }
   }
 
   // Initialize auth state
-  useEffect(() => {
+  useEffect(()=> {
     let authListener
-    
-    const initializeAuth = async () => {
+
+    const initializeAuth=async ()=> {
       try {
         console.log('🔄 Initializing auth...')
-        
+
         // Get initial session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const {data: {session},error: sessionError}=await supabase.auth.getSession()
         if (sessionError) throw sessionError
 
         if (session?.user) {
           console.log('✅ Found existing session')
           setUser(session.user)
-          const profile = await getOrCreateProfile(
+          const profile=await getOrCreateProfile(
             session.user.id,
             session.user.email,
             session.user.user_metadata
           )
           setUserProfile(profile)
-          console.log('✅ Profile loaded:', profile.nickname || profile.full_name)
+          console.log('✅ Profile loaded:',profile.nickname || profile.full_name)
         } else {
           console.log('ℹ️ No existing session found')
         }
 
         // Listen for auth changes
-        authListener = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('🔄 Auth state change:', event)
-          
-          if (event === 'SIGNED_IN' && session?.user) {
+        authListener=supabase.auth.onAuthStateChange(async (event,session)=> {
+          console.log('🔄 Auth state change:',event)
+          if (event==='SIGNED_IN' && session?.user) {
             setUser(session.user)
-            const profile = await getOrCreateProfile(
+            const profile=await getOrCreateProfile(
               session.user.id,
               session.user.email,
               session.user.user_metadata
             )
             setUserProfile(profile)
-          } else if (event === 'SIGNED_OUT') {
+          } else if (event==='SIGNED_OUT') {
             clearAuthState()
           }
         })
       } catch (error) {
-        console.error('❌ Auth initialization error:', error)
+        console.error('❌ Auth initialization error:',error)
         setError(error.message)
       } finally {
         setLoading(false)
@@ -113,163 +111,162 @@ export function AuthProvider({ children }) {
 
     initializeAuth()
 
-    return () => {
-      mounted.current = false
+    return ()=> {
+      mounted.current=false
       if (authListener) authListener.subscription.unsubscribe()
     }
-  }, [])
+  },[])
 
   // Sign in
-  const signIn = async (email, password) => {
+  const signIn=async (email,password)=> {
     try {
       setLoading(true)
       setError(null)
       console.log('🔄 Signing in...')
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const {data,error}=await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
       })
 
       if (error) throw error
       console.log('✅ Sign in successful')
-      return { data }
+      return {data}
     } catch (error) {
-      console.error('❌ Sign in error:', error)
+      console.error('❌ Sign in error:',error)
       setError(error.message)
-      return { error }
+      return {error}
     } finally {
       setLoading(false)
     }
   }
 
-  // Sign up
-  const signUp = async (email, password, fullName) => {
+  // Sign up - Updated to accept displayName
+  const signUp=async (email,password,fullName,displayName)=> {
     try {
       setLoading(true)
       setError(null)
       console.log('🔄 Signing up...')
 
-      const { data, error } = await supabase.auth.signUp({
+      const {data,error}=await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           data: {
             full_name: fullName.trim(),
-            nickname: fullName.trim()
+            nickname: displayName.trim()
           }
         }
       })
 
       if (error) throw error
       console.log('✅ Sign up successful')
-      return { data }
+      return {data}
     } catch (error) {
-      console.error('❌ Sign up error:', error)
+      console.error('❌ Sign up error:',error)
       setError(error.message)
-      return { error }
+      return {error}
     } finally {
       setLoading(false)
     }
   }
 
   // Sign out
-  const signOut = async () => {
+  const signOut=async ()=> {
     try {
       console.log('🔄 Signing out...')
       await supabase.auth.signOut()
       clearAuthState()
       console.log('✅ Sign out successful')
     } catch (error) {
-      console.error('❌ Sign out error:', error)
+      console.error('❌ Sign out error:',error)
       clearAuthState()
     }
   }
 
   // Reset password
-  const resetPassword = async (email) => {
+  const resetPassword=async (email)=> {
     try {
-      const { data, error } = await supabase.auth.resetPasswordForEmail(
+      const {data,error}=await supabase.auth.resetPasswordForEmail(
         email.trim(),
-        { redirectTo: `${window.location.origin}/reset-password` }
+        {redirectTo: `${window.location.origin}/reset-password`}
       )
       if (error) throw error
-      return { data }
+      return {data}
     } catch (error) {
-      console.error('Reset password error:', error)
+      console.error('Reset password error:',error)
       setError(error.message)
-      return { error }
+      return {error}
     }
   }
 
   // Update profile
-  const updateUserProfile = async (userId, updates) => {
-    if (!userProfile || userProfile.id !== userId) {
-      return { error: { message: 'Cannot update profile: user not authenticated' } }
+  const updateUserProfile=async (userId,updates)=> {
+    if (!userProfile || userProfile.id !==userId) {
+      return {error: {message: 'Cannot update profile: user not authenticated'}}
     }
 
     try {
-      const { data, error } = await supabase
+      const {data,error}=await supabase
         .from('profiles_mgg_2024')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId)
+        .eq('id',userId)
         .select()
         .single()
 
       if (error) throw error
-
       setUserProfile(data)
-      return { data }
+      return {data}
     } catch (error) {
-      console.error('Update profile error:', error)
+      console.error('Update profile error:',error)
       setError(error.message)
-      return { error }
+      return {error}
     }
   }
 
   // Update user role (admin only)
-  const updateUserRole = async (userId, newRole) => {
+  const updateUserRole=async (userId,newRole)=> {
     if (!isAdmin()) {
-      return { error: { message: 'Only admins can update user roles' } }
+      return {error: {message: 'Only admins can update user roles'}}
     }
 
     try {
-      const { data, error } = await supabase
+      const {data,error}=await supabase
         .from('profiles_mgg_2024')
         .update({
           role: newRole,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId)
+        .eq('id',userId)
         .select()
         .single()
 
       if (error) throw error
-      return { data }
+      return {data}
     } catch (error) {
-      console.error('Update user role error:', error)
-      return { error }
+      console.error('Update user role error:',error)
+      return {error}
     }
   }
 
   // Role checks
-  const isAdmin = () => userProfile?.role === 'admin'
-  const isTechnician = () => userProfile?.role === 'developer' || userProfile?.role === 'admin'
+  const isAdmin=()=> userProfile?.role==='admin'
+  const isTechnician=()=> userProfile?.role==='developer' || userProfile?.role==='admin'
 
   // Access control
-  const canEditBug = (bugId) => isTechnician() || userProfile?.id === bugId
-  const canChangeBugStatus = (bugId) => isTechnician()
+  const canEditBug=(bugId)=> isTechnician() || userProfile?.id===bugId
+  const canChangeBugStatus=(bugId)=> isTechnician()
 
   // Retry profile fetch
-  const retryProfileFetch = async () => {
+  const retryProfileFetch=async ()=> {
     if (user) {
       try {
         setLoading(true)
         setError(null)
-        const profile = await getOrCreateProfile(user.id, user.email, user.user_metadata)
+        const profile=await getOrCreateProfile(user.id,user.email,user.user_metadata)
         setUserProfile(profile)
       } catch (error) {
         setError(error.message)
@@ -279,7 +276,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const value = {
+  const value={
     user,
     userProfile,
     loading,

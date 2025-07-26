@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import SafeIcon from '../common/SafeIcon';
 import { FiTrash2, FiEdit3 } from 'react-icons/fi';
 import AttachmentViewer from './AttachmentViewer';
+import { useMention } from '../contexts/MentionContext';
 
 /**
  * A reusable component to display comments with mentions
@@ -14,13 +15,9 @@ import AttachmentViewer from './AttachmentViewer';
  * @param {function} props.onEdit - Function to handle comment editing
  * @returns {JSX.Element}
  */
-const CommentDisplay = ({
-  comment,
-  canDelete = false,
-  canEdit = false,
-  onDelete,
-  onEdit
-}) => {
+const CommentDisplay = ({ comment, canDelete = false, canEdit = false, onDelete, onEdit }) => {
+  const { renderWithMentions } = useMention();
+  
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin': return 'text-red-600';
@@ -38,45 +35,6 @@ const CommentDisplay = ({
       return comment.user_full_name;
     }
     return 'Anonymous';
-  };
-
-  // Function to render text with mentions
-  const renderTextWithMentions = (text) => {
-    if (!text) return null;
-    
-    // Replace @[username](userId) with styled mentions
-    const parts = [];
-    const regex = /\@\[([^\]]+)\]\(([^)]+)\)/g;
-    let lastIndex = 0;
-    let match;
-    
-    while ((match = regex.exec(text)) !== null) {
-      // Add text before the mention
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-      
-      // Add the mention as styled element
-      const username = match[1];
-      const userId = match[2];
-      parts.push(
-        <span 
-          key={`mention-${match.index}`}
-          className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-blue-700 hover:bg-blue-100 transition-colors font-medium cursor-pointer"
-        >
-          @{username}
-        </span>
-      );
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-    
-    return parts.length > 0 ? parts : text;
   };
 
   const displayName = getDisplayName(comment);
@@ -124,7 +82,7 @@ const CommentDisplay = ({
           )}
         </div>
         <div className="text-sm text-gray-700 whitespace-pre-wrap">
-          {renderTextWithMentions(comment.text)}
+          {renderWithMentions(comment.text)}
         </div>
         {comment.attachments && comment.attachments.length > 0 && (
           <div className="mt-3">

@@ -30,17 +30,16 @@ const EnhancedTextarea = forwardRef(({
   }, [ref]);
 
   const handleChange = (e) => {
+    console.log("📝 EnhancedTextarea onChange:", e.target.value);
     onChange(e);
-    // Call mention handler after onChange to ensure state is updated
-    setTimeout(() => {
-      handleMentionInput(e, textAreaRef);
-    }, 10);
+    // Call mention handler immediately
+    handleMentionInput(e, textAreaRef);
   };
 
   const handleKeyDown = (e) => {
     // Debug logging for @ key press
     if (e.key === '@') {
-      console.log("@ key pressed in enhanced textarea", {
+      console.log("⌨️ @ key pressed in enhanced textarea", {
         cursorPos: textAreaRef.current?.selectionStart,
         textValue: textAreaRef.current?.value
       });
@@ -53,19 +52,24 @@ const EnhancedTextarea = forwardRef(({
   };
 
   const handleInput = (e) => {
+    console.log("⌨️ Input event in enhanced textarea");
     // Handle input event for better @ detection
-    setTimeout(() => {
-      handleMentionInput(e, textAreaRef);
-    }, 10);
+    handleMentionInput(e, textAreaRef);
   };
 
   const handleKeyUp = (e) => {
     // Also handle keyup for @ detection
     if (e.key === '@' || e.key === 'Backspace' || e.key === 'Delete') {
-      setTimeout(() => {
-        handleMentionInput(e, textAreaRef);
-      }, 10);
+      console.log("⌨️ KeyUp event for mention detection:", e.key);
+      handleMentionInput(e, textAreaRef);
     }
+  };
+
+  const handleClick = (e) => {
+    // Handle click events for cursor position changes
+    setTimeout(() => {
+      handleMentionInput(e, textAreaRef);
+    }, 10);
   };
 
   return (
@@ -77,6 +81,7 @@ const EnhancedTextarea = forwardRef(({
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         onInput={handleInput}
+        onClick={handleClick}
         placeholder={placeholder}
         minRows={minRows}
         maxRows={maxRows}

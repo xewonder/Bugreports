@@ -6,10 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import UserNotifications from './UserNotifications';
 import * as FiIcons from 'react-icons/fi';
 
-const {
-  FiHome, FiBug, FiPlus, FiMap, FiUsers, FiSettings, FiMenu, FiX, FiLogOut,
-  FiPackage, FiStar, FiCommand, FiMessageCircle, FiLightbulb
-} = FiIcons;
+const { FiHome, FiBug, FiPlus, FiMap, FiUsers, FiSettings, FiMenu, FiX, FiLogOut, FiPackage, FiStar, FiCommand, FiMessageCircle, FiLightbulb, FiHelpCircle } = FiIcons;
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation();
@@ -17,13 +14,14 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
   const menuItems = [
     { path: '/', icon: FiHome, label: 'Dashboard' },
-    { path: '/roadmap', icon: FiMap, label: 'Roadmap' }, // Moved under Dashboard
+    { path: '/roadmap', icon: FiMap, label: 'Roadmap' },
     { path: '/bugs', icon: FiBug, label: 'Bug Reports' },
     { path: '/create-bug', icon: FiPlus, label: 'Report Bug' },
     { path: '/features', icon: FiStar, label: 'Feature Requests' },
     { path: '/prompts', icon: FiCommand, label: 'Power Prompts' },
     { path: '/tips', icon: FiLightbulb, label: 'Tips & Tricks' },
     { path: '/general-talk', icon: FiMessageCircle, label: 'General Talk' },
+    { path: '/help', icon: FiHelpCircle, label: 'Help Center' },
     { path: '/admin', icon: FiUsers, label: 'Admin Panel', adminOnly: true },
     { path: '/settings', icon: FiSettings, label: 'Settings' }
   ].filter(item => !item.adminOnly || isAdmin());
@@ -36,9 +34,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
       )}
 
       <motion.div
-        className={`fixed left-0 top-0 h-full bg-white shadow-lg z-50 transition-all duration-300 ${
-          isOpen ? 'w-64' : 'w-16'
-        }`}
+        className={`fixed left-0 top-0 h-full bg-white shadow-lg z-50 transition-all duration-300 ${isOpen ? 'w-64' : 'w-16'}`}
         initial={{ x: -100 }}
         animate={{ x: 0 }}
         transition={{ duration: 0.3 }}
@@ -53,11 +49,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
               className="flex items-center space-x-2"
             >
               <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
-                <img
-                  src="https://ph-files.imgix.net/c6228782-80c0-4dfe-b90a-25b9a704de70.png?auto=format"
-                  alt="MGG Logo"
-                  className="w-full h-full object-contain"
-                />
+                <img src="https://ph-files.imgix.net/c6228782-80c0-4dfe-b90a-25b9a704de70.png?auto=format" alt="MGG Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">
@@ -86,9 +78,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
               key={item.path}
               to={item.path}
               className={`flex items-center px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors ${
-                location.pathname === item.path
-                  ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                  : ''
+                location.pathname === item.path ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' : ''
               }`}
             >
               <SafeIcon icon={item.icon} className="text-xl" />

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
+import React, {useState, useEffect} from 'react';
+import {motion} from 'framer-motion';
+import {useAuth} from '../contexts/AuthContext';
 import SafeIcon from '../common/SafeIcon';
 import * as FiIcons from 'react-icons/fi';
 import supabase from '../lib/supabase';
-import { format } from 'date-fns';
+import {format} from 'date-fns';
 
-const { FiSearch, FiEdit3, FiSave, FiX, FiTrash2, FiUserPlus, FiCheckCircle, FiAlertCircle, FiUser, FiMail, FiCalendar, FiShield, FiFilter } = FiIcons;
+const {FiSearch, FiEdit3, FiSave, FiX, FiTrash2, FiUserPlus, FiCheckCircle, FiAlertCircle, FiUser, FiMail, FiCalendar, FiShield, FiFilter} = FiIcons;
 
 const UserManagement = () => {
-  const { userProfile, updateUserRole } = useAuth();
+  const {userProfile, updateUserRole} = useAuth();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState('All');
   const [sortBy, setSortBy] = useState('created_at');
   const [editingUser, setEditingUser] = useState(null);
-  const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
+  const [statusMessage, setStatusMessage] = useState({type: '', message: ''});
 
   useEffect(() => {
     fetchUsers();
@@ -30,16 +30,16 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('profiles_mgg_2024')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', {ascending: false});
 
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
-      setStatusMessage({ type: 'error', message: 'Failed to load users: ' + error.message });
+      setStatusMessage({type: 'error', message: 'Failed to load users: ' + error.message});
     } finally {
       setLoading(false);
     }
@@ -50,9 +50,9 @@ const UserManagement = () => {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      filtered = filtered.filter(user => 
+        user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) || 
         user.nickname?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -89,15 +89,16 @@ const UserManagement = () => {
         throw new Error('Invalid role selected');
       }
 
-      // Update user in Supabase
-      const { data, error } = await supabase
+      // Update user in Supabase - FIX: Add single() to ensure only one record is returned
+      const {data, error} = await supabase
         .from('profiles_mgg_2024')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
         })
         .eq('id', userId)
-        .select();
+        .select()
+        .single();  // Add this to ensure only one row is returned
 
       if (error) {
         throw error;
@@ -105,7 +106,7 @@ const UserManagement = () => {
 
       // Update local state
       const updatedUsers = users.map(user => 
-        user.id === userId ? { ...user, ...updates, updated_at: new Date().toISOString() } : user
+        user.id === userId ? {...user, ...updates, updated_at: new Date().toISOString()} : user
       );
       setUsers(updatedUsers);
       setEditingUser(null);
@@ -116,14 +117,14 @@ const UserManagement = () => {
         if (result.error) throw result.error;
       }
 
-      setStatusMessage({ type: 'success', message: 'User updated successfully' });
+      setStatusMessage({type: 'success', message: 'User updated successfully'});
     } catch (error) {
       console.error('Error updating user:', error);
-      setStatusMessage({ 
+      setStatusMessage({
         type: 'error', 
         message: error.message === 'Invalid role selected' 
           ? 'Invalid role. Please select user, developer, or admin.' 
-          : 'Failed to update user: ' + error.message 
+          : 'Failed to update user: ' + error.message
       });
     }
   };
@@ -133,7 +134,7 @@ const UserManagement = () => {
 
     try {
       // Instead of deleting the user, mark them as inactive
-      const { error } = await supabase
+      const {error} = await supabase
         .from('profiles_mgg_2024')
         .update({
           is_active: false,
@@ -144,14 +145,11 @@ const UserManagement = () => {
       if (error) throw error;
 
       // Update local state
-      setUsers(users.map(user => 
-        user.id === userId ? { ...user, is_active: false } : user
-      ));
-
-      setStatusMessage({ type: 'success', message: 'User deactivated successfully' });
+      setUsers(users.map(user => user.id === userId ? {...user, is_active: false} : user));
+      setStatusMessage({type: 'success', message: 'User deactivated successfully'});
     } catch (error) {
       console.error('Error deactivating user:', error);
-      setStatusMessage({ type: 'error', message: 'Failed to deactivate user: ' + error.message });
+      setStatusMessage({type: 'error', message: 'Failed to deactivate user: ' + error.message});
     }
   };
 
@@ -178,8 +176,8 @@ const UserManagement = () => {
       {/* Status Message */}
       {statusMessage.message && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{opacity: 0, y: -10}}
+          animate={{opacity: 1, y: 0}}
           className={`p-4 rounded-lg mb-6 flex items-center space-x-2 ${
             statusMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
           }`}
@@ -187,7 +185,7 @@ const UserManagement = () => {
           <SafeIcon icon={statusMessage.type === 'success' ? FiCheckCircle : FiAlertCircle} className="flex-shrink-0" />
           <span>{statusMessage.message}</span>
           <button
-            onClick={() => setStatusMessage({ type: '', message: '' })}
+            onClick={() => setStatusMessage({type: '', message: ''})}
             className="ml-auto text-gray-500 hover:text-gray-700"
           >
             <SafeIcon icon={FiX} />
@@ -281,7 +279,7 @@ const UserManagement = () => {
                           <input
                             type="text"
                             value={editingUser.full_name || ''}
-                            onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                            onChange={(e) => setEditingUser({...editingUser, full_name: e.target.value})}
                             className="border border-gray-300 rounded px-2 py-1 text-sm"
                           />
                         ) : (
@@ -303,7 +301,7 @@ const UserManagement = () => {
                     {editingUser && editingUser.id === user.id ? (
                       <select
                         value={editingUser.role || 'user'}
-                        onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                        onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
                         className="border border-gray-300 rounded px-2 py-1 text-sm"
                       >
                         <option value="user">User</option>
@@ -328,19 +326,18 @@ const UserManagement = () => {
                     {editingUser && editingUser.id === user.id ? (
                       <select
                         value={editingUser.is_active === false ? 'inactive' : 'active'}
-                        onChange={(e) => setEditingUser({
-                          ...editingUser,
-                          is_active: e.target.value === 'active'
-                        })}
+                        onChange={(e) => setEditingUser({...editingUser, is_active: e.target.value === 'active'})}
                         className="border border-gray-300 rounded px-2 py-1 text-sm"
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                       </select>
                     ) : (
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.is_active === false ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          user.is_active === false ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
+                        }`}
+                      >
                         {user.is_active === false ? 'Inactive' : 'Active'}
                       </span>
                     )}
@@ -364,7 +361,7 @@ const UserManagement = () => {
                     ) : (
                       <div className="flex items-center justify-end space-x-2">
                         <button
-                          onClick={() => setEditingUser({ ...user })}
+                          onClick={() => setEditingUser({...user})}
                           className="text-blue-600 hover:text-blue-900"
                           title="Edit User"
                         >

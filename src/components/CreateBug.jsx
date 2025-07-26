@@ -5,13 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 import SafeIcon from '../common/SafeIcon';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
+import AssigneeAutocomplete from './AssigneeAutocomplete';
 import * as FiIcons from 'react-icons/fi';
 import supabase from '../lib/supabase';
 
-const { 
-  FiArrowLeft, FiSave, FiX, FiCheckCircle, 
-  FiAlertCircle, FiPaperclip
-} = FiIcons;
+const { FiArrowLeft, FiSave, FiX, FiCheckCircle, FiAlertCircle, FiPaperclip } = FiIcons;
 
 const CreateBug = () => {
   const navigate = useNavigate();
@@ -26,6 +24,7 @@ const CreateBug = () => {
     assignee: '',
     tags: ''
   });
+  
   const [attachments, setAttachments] = useState([]);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -46,20 +45,23 @@ const CreateBug = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm() || loading) return;
-
+    
     if (!userProfile) {
-      setStatusMessage({ type: 'error', message: 'You must be logged in to create a bug report' });
+      setStatusMessage({
+        type: 'error',
+        message: 'You must be logged in to create a bug report'
+      });
       return;
     }
 
     setLoading(true);
     setStatusMessage({ type: '', message: '' });
-
+    
     try {
       const tagsArray = form.tags
         ? form.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
         : [];
-
+      
       const bugData = {
         title: form.title.trim(),
         description: form.description.trim(),
@@ -68,7 +70,6 @@ const CreateBug = () => {
         status: form.status,
         assignee: form.assignee || null,
         reporter_id: userProfile.id,
-        reporter_name: userProfile.full_name || userProfile.nickname || 'Anonymous',
         tags: tagsArray,
         attachments: attachments
       };
@@ -77,18 +78,24 @@ const CreateBug = () => {
         .from('bugs_mgg2024')
         .insert([bugData])
         .select();
-
+        
       if (error) throw error;
-
-      setStatusMessage({ type: 'success', message: 'Bug report created successfully!' });
-
+      
+      setStatusMessage({
+        type: 'success',
+        message: 'Bug report created successfully!'
+      });
+      
       // Navigate after a short delay to show success message
       setTimeout(() => {
         navigate('/bugs');
       }, 1500);
     } catch (error) {
       console.error('Error creating bug:', error);
-      setStatusMessage({ type: 'error', message: 'Failed to create bug report: ' + error.message });
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to create bug report: ' + error.message
+      });
     } finally {
       setLoading(false);
     }
@@ -133,7 +140,10 @@ const CreateBug = () => {
             statusMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
           }`}
         >
-          <SafeIcon icon={statusMessage.type === 'success' ? FiCheckCircle : FiAlertCircle} className="flex-shrink-0" />
+          <SafeIcon
+            icon={statusMessage.type === 'success' ? FiCheckCircle : FiAlertCircle}
+            className="flex-shrink-0"
+          />
           <span>{statusMessage.message}</span>
         </motion.div>
       )}
@@ -194,16 +204,15 @@ const CreateBug = () => {
                   <SafeIcon icon={FiPaperclip} className="mr-2" />
                   Attachments
                 </label>
-                <FileUpload 
-                  onFilesUploaded={setAttachments} 
-                  existingFiles={attachments} 
-                  maxFiles={5} 
+                <FileUpload
+                  onFilesUploaded={setAttachments}
+                  existingFiles={attachments}
+                  maxFiles={5}
                   disabled={loading}
                 />
                 <p className="mt-2 text-xs text-gray-500">
                   Add screenshots, videos, or documents to help explain the bug
                 </p>
-                
                 {/* Show attachments preview if any */}
                 {attachments.length > 0 && (
                   <div className="mt-4">
@@ -289,40 +298,46 @@ const CreateBug = () => {
               </div>
 
               {/* Assignment - Only for Technicians */}
-              {isTechnician() && (
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Assign to Self
-                      </label>
-                      <label className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={form.assignee === userProfile?.full_name}
-                          onChange={(e) =>
-                            handleChange(
-                              'assignee',
-                              e.target.checked ? userProfile?.full_name || '' : ''
-                            )
-                          }
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          disabled={loading}
-                        />
-                        <span className="text-sm text-gray-700">
-                          Assign this bug to myself
-                        </span>
-                      </label>
-                      {form.assignee && (
-                        <p className="mt-2 text-sm text-gray-600">
-                          Assigned to: {form.assignee}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Assignment</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assignee
+                  </label>
+                  <AssigneeAutocomplete
+                    value={form.assignee}
+                    onChange={(value) => handleChange('assignee', value)}
+                    placeholder="Person responsible"
+                    disabled={loading}
+                  />
                 </div>
-              )}
+                {isTechnician() && (
+                  <div className="mt-4">
+                    <label className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={form.assignee === userProfile?.full_name}
+                        onChange={(e) =>
+                          handleChange(
+                            'assignee',
+                            e.target.checked ? userProfile?.full_name || '' : ''
+                          )
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        disabled={loading}
+                      />
+                      <span className="text-sm text-gray-700">
+                        Assign this bug to myself
+                      </span>
+                    </label>
+                    {form.assignee && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        Assigned to: {form.assignee}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Reporter Info */}
               <div className="bg-white rounded-xl shadow-sm p-6">

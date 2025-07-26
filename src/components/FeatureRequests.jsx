@@ -8,16 +8,18 @@ import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
 import EnhancedTextarea from './EnhancedTextarea';
 import MentionSuggestions from './MentionSuggestions';
+import MoveToRoadmapModal from './MoveToRoadmapModal';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
 
-const { FiStar, FiSearch, FiFilter, FiPlus, FiEdit3, FiTrash2, FiMessageCircle, FiSend, FiCheckCircle, FiAlertCircle, FiX, FiChevronDown, FiChevronUp, FiLoader, FiThumbsUp, FiPaperclip } = FiIcons;
+const { FiStar, FiSearch, FiFilter, FiPlus, FiEdit3, FiTrash2, FiMessageCircle, FiSend, 
+  FiCheckCircle, FiAlertCircle, FiX, FiChevronDown, FiChevronUp, FiLoader, 
+  FiThumbsUp, FiPaperclip, FiMap } = FiIcons;
 
 const FeatureRequests = () => {
   const { userProfile, isTechnician } = useAuth();
   const { processMentions, renderWithMentions } = useMention();
-  
   const [features, setFeatures] = useState([]);
   const [expandedFeature, setExpandedFeature] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,6 +47,9 @@ const FeatureRequests = () => {
   const [newComment, setNewComment] = useState({});
   const [commentCounts, setCommentCounts] = useState({});
   const [loadingComments, setLoadingComments] = useState({});
+  const [showMoveToRoadmapModal, setShowMoveToRoadmapModal] = useState(false);
+  const [featureToMove, setFeatureToMove] = useState(null);
+  
   const commentsEndRef = useRef(null);
 
   // Add refs for textareas
@@ -73,17 +78,18 @@ const FeatureRequests = () => {
       setLoading(true);
       console.log("Fetching feature requests...");
       // First try the direct table if views are having issues
-      let { data, error } = await supabase
+      let { data, error: fetchError } = await supabase
         .from('feature_requests_mgg2024')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching from direct table:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Error fetching from direct table:', fetchError);
+        throw fetchError;
       }
+      
       console.log("Feature data from database:", data);
-
+      
       // If we got data directly, enhance it with user info
       if (data && data.length > 0) {
         const enhancedData = await Promise.all(
@@ -103,6 +109,7 @@ const FeatureRequests = () => {
                 user_role: 'user'
               };
             }
+
             return {
               ...feature,
               user_full_name: userData?.full_name || 'Unknown',
@@ -125,7 +132,6 @@ const FeatureRequests = () => {
         type: 'error',
         message: 'Failed to load feature requests: ' + error.message
       });
-      setFeatures([]);
     } finally {
       setLoading(false);
     }
@@ -151,7 +157,7 @@ const FeatureRequests = () => {
           counts[comment.feature_request_id] = (counts[comment.feature_request_id] || 0) + 1;
         });
       }
-
+      
       setCommentCounts(counts);
     } catch (error) {
       console.error('Error fetching comment counts:', error);
@@ -161,7 +167,7 @@ const FeatureRequests = () => {
   const fetchComments = async (featureId) => {
     try {
       setLoadingComments(prev => ({ ...prev, [featureId]: true }));
-
+      
       // Try fetching directly from the table
       const { data, error } = await supabase
         .from('feature_request_comments_mgg2024')
@@ -189,6 +195,7 @@ const FeatureRequests = () => {
               user_role: 'user'
             };
           }
+
           return {
             ...comment,
             user_full_name: userData?.full_name || 'Unknown',
@@ -219,6 +226,7 @@ const FeatureRequests = () => {
 
       const voteCounts = {};
       const userVotes = {};
+      
       data?.forEach(vote => {
         voteCounts[vote.feature_request_id] = (voteCounts[vote.feature_request_id] || 0) + 1;
         if (vote.user_id === userProfile?.id) {
@@ -234,11 +242,11 @@ const FeatureRequests = () => {
 
   const handleSubmitFeature = async (e) => {
     e.preventDefault();
-
+    
     const errors = {};
     if (!form.title.trim()) errors.title = 'Title is required';
     if (!form.description.trim()) errors.description = 'Description is required';
-
+    
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -253,6 +261,7 @@ const FeatureRequests = () => {
     }
 
     setFormSubmitting(true);
+
     try {
       const tagsArray = form.tags
         ? form.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
@@ -381,6 +390,7 @@ const FeatureRequests = () => {
 
     try {
       const hasVoted = votes.userVotes?.[featureId];
+      
       if (hasVoted) {
         const { error } = await supabase
           .from('feature_request_votes_mgg2024')
@@ -405,7 +415,10 @@ const FeatureRequests = () => {
         if (error) throw error;
 
         setVotes(prev => ({
-          counts: { ...prev.counts, [featureId]: (prev.counts[featureId] || 0) + 1 },
+          counts: {
+            ...prev.counts,
+            [featureId]: (prev.counts[featureId] || 0) + 1
+          },
           userVotes: { ...prev.userVotes, [featureId]: true }
         }));
       }
@@ -421,7 +434,7 @@ const FeatureRequests = () => {
   const handleAddComment = async (featureId) => {
     const text = newComment[featureId];
     if (!text || !text.trim()) return;
-
+    
     if (!userProfile) {
       setStatusMessage({
         type: 'error',
@@ -468,10 +481,12 @@ const FeatureRequests = () => {
         ...prev,
         [featureId]: [...(prev[featureId] || []), newCommentWithUser]
       }));
+      
       setCommentCounts(prev => ({
         ...prev,
         [featureId]: (prev[featureId] || 0) + 1
       }));
+      
       setNewComment({ ...newComment, [featureId]: '' });
       setCommentAttachments([]);
 
@@ -479,7 +494,7 @@ const FeatureRequests = () => {
         type: 'success',
         message: 'Comment added successfully'
       });
-
+      
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
@@ -521,7 +536,7 @@ const FeatureRequests = () => {
         type: 'success',
         message: 'Feature request deleted successfully'
       });
-
+      
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
@@ -551,6 +566,7 @@ const FeatureRequests = () => {
           c => c.id !== comment.id
         )
       }));
+      
       setCommentCounts(prev => ({
         ...prev,
         [comment.feature_request_id]: Math.max(0, (prev[comment.feature_request_id] || 1) - 1)
@@ -560,7 +576,7 @@ const FeatureRequests = () => {
         type: 'success',
         message: 'Comment deleted successfully'
       });
-
+      
       setTimeout(() => {
         setStatusMessage({ type: '', message: '' });
       }, 3000);
@@ -584,6 +600,11 @@ const FeatureRequests = () => {
     }
   };
 
+  const handleMoveToRoadmap = (feature) => {
+    setFeatureToMove(feature);
+    setShowMoveToRoadmapModal(true);
+  };
+
   const canUserEditFeature = (feature) => {
     return userProfile && (feature.user_id === userProfile.id || isTechnician());
   };
@@ -592,50 +613,38 @@ const FeatureRequests = () => {
     return userProfile && (comment.user_id === userProfile.id || isTechnician());
   };
 
+  const canMoveToRoadmap = (feature) => {
+    return userProfile && isTechnician();
+  };
+
   const getRoleColor = (role) => {
     switch (role) {
-      case 'admin':
-        return 'text-red-600';
-      case 'developer':
-        return 'text-blue-600';
-      case 'user':
-        return 'text-green-600';
-      default:
-        return 'text-gray-600';
+      case 'admin': return 'text-red-600';
+      case 'developer': return 'text-blue-600';
+      case 'user': return 'text-green-600';
+      default: return 'text-gray-600';
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'requested':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'under_review':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'planned':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'in_progress':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'declined':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'requested': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'under_review': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'planned': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'in_progress': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'declined': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -648,30 +657,34 @@ const FeatureRequests = () => {
   // Helper function to get display name with proper fallback
   const getDisplayName = (feature) => {
     if (
-      feature.user_nickname &&
-      typeof feature.user_nickname === 'string' &&
+      feature.user_nickname && 
+      typeof feature.user_nickname === 'string' && 
       feature.user_nickname.trim() !== ''
     ) {
       return feature.user_nickname;
     }
+    
     if (
-      feature.user_full_name &&
-      typeof feature.user_full_name === 'string' &&
+      feature.user_full_name && 
+      typeof feature.user_full_name === 'string' && 
       feature.user_full_name.trim() !== ''
     ) {
       return feature.user_full_name;
     }
+    
     return 'Anonymous';
   };
 
   // Filter and sort features
   const filteredFeatures = features
     .filter(feature => {
-      const matchesSearch =
-        feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = 
+        feature.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
         feature.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
       const matchesStatus = statusFilter === 'All' || feature.status === statusFilter;
       const matchesPriority = priorityFilter === 'All' || feature.priority === priorityFilter;
+      
       return matchesSearch && matchesStatus && matchesPriority;
     })
     .sort((a, b) => {
@@ -680,7 +693,12 @@ const FeatureRequests = () => {
       } else if (sortBy === 'created_at') {
         return new Date(b.created_at) - new Date(a.created_at);
       } else if (sortBy === 'priority') {
-        const priorityOrder = { 'critical': 3, 'high': 2, 'medium': 1, 'low': 0 };
+        const priorityOrder = {
+          'critical': 3,
+          'high': 2,
+          'medium': 1,
+          'low': 0
+        };
         return priorityOrder[b.priority] - priorityOrder[a.priority];
       }
       return 0;
@@ -688,26 +706,8 @@ const FeatureRequests = () => {
 
   // Comment component
   const CommentItem = ({ comment }) => {
-    const getCommentDisplayName = (comment) => {
-      if (
-        comment.user_nickname &&
-        typeof comment.user_nickname === 'string' &&
-        comment.user_nickname.trim() !== ''
-      ) {
-        return comment.user_nickname;
-      }
-      if (
-        comment.user_full_name &&
-        typeof comment.user_full_name === 'string' &&
-        comment.user_full_name.trim() !== ''
-      ) {
-        return comment.user_full_name;
-      }
-      return 'Anonymous';
-    };
-
-    const displayName = getCommentDisplayName(comment);
-
+    const displayName = getDisplayName(comment);
+    
     return (
       <div className="flex space-x-3 pb-4 mb-4 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0">
         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -795,9 +795,7 @@ const FeatureRequests = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className={`p-4 rounded-lg mb-6 flex items-center space-x-2 ${
-              statusMessage.type === 'success'
-                ? 'bg-green-50 text-green-700'
-                : 'bg-red-50 text-red-700'
+              statusMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
             }`}
           >
             <SafeIcon
@@ -847,6 +845,7 @@ const FeatureRequests = () => {
                   <p className="mt-1 text-sm text-red-600">{formErrors.title}</p>
                 )}
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description *
@@ -861,9 +860,7 @@ const FeatureRequests = () => {
                     }}
                     placeholder="Please describe the feature in detail, including why it would be valuable (Type @ to mention users)"
                     minRows={8}
-                    className={`${
-                      formErrors.description ? 'border-red-300' : 'border-gray-300'
-                    } font-mono`}
+                    className={`${formErrors.description ? 'border-red-300' : 'border-gray-300'} font-mono`}
                     disabled={formSubmitting}
                   />
                   <MentionSuggestions textAreaRef={formDescriptionRef} />
@@ -872,6 +869,7 @@ const FeatureRequests = () => {
                   <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
                 )}
               </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
                   <SafeIcon icon={FiPaperclip} className="mr-2" />
@@ -885,6 +883,7 @@ const FeatureRequests = () => {
                   compact
                 />
               </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -902,6 +901,7 @@ const FeatureRequests = () => {
                     <option value="critical">Critical</option>
                   </select>
                 </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tags
@@ -916,6 +916,7 @@ const FeatureRequests = () => {
                   />
                 </div>
               </div>
+              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -966,6 +967,7 @@ const FeatureRequests = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+            
             <div className="flex space-x-2">
               <select
                 value={sortBy}
@@ -977,6 +979,7 @@ const FeatureRequests = () => {
                 <option value="priority">Priority</option>
               </select>
             </div>
+            
             <div className="flex items-center justify-center bg-gray-50 rounded-lg px-4 py-2">
               <span className="text-sm text-gray-600">
                 {filteredFeatures.length} of {features.length} features
@@ -1022,9 +1025,11 @@ const FeatureRequests = () => {
                         {feature.priority.charAt(0).toUpperCase() + feature.priority.slice(1)}
                       </span>
                     </div>
+                    
                     <div className="bg-gray-50 p-4 rounded-lg text-sm mb-3 border border-gray-200 whitespace-pre-wrap line-clamp-2">
                       {renderWithMentions(feature.description)}
                     </div>
+                    
                     <div className="flex items-center text-sm text-gray-500">
                       <span>
                         By {getDisplayName(feature)}
@@ -1044,6 +1049,7 @@ const FeatureRequests = () => {
                       )}
                     </div>
                   </div>
+                  
                   <div className="flex items-center space-x-3 ml-4">
                     <button
                       onClick={() => handleVote(feature.id)}
@@ -1057,6 +1063,7 @@ const FeatureRequests = () => {
                       <SafeIcon icon={FiThumbsUp} className="text-sm" />
                       <span className="font-medium">{votes.counts?.[feature.id] || 0}</span>
                     </button>
+                    
                     <button
                       onClick={() => toggleExpandFeature(feature.id)}
                       className="flex items-center space-x-1 text-gray-500 hover:text-blue-600"
@@ -1066,15 +1073,26 @@ const FeatureRequests = () => {
                         {commentCounts[feature.id] !== undefined ? commentCounts[feature.id] : 0} Comments
                       </span>
                     </button>
+                    
                     <button
                       onClick={() => toggleExpandFeature(feature.id)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title={expandedFeature === feature.id ? 'Collapse' : 'Expand'}
                     >
-                      <SafeIcon
-                        icon={expandedFeature === feature.id ? FiChevronUp : FiChevronDown}
-                      />
+                      <SafeIcon icon={expandedFeature === feature.id ? FiChevronUp : FiChevronDown} />
                     </button>
+                    
+                    {/* Move to Roadmap Button for admins/developers */}
+                    {canMoveToRoadmap(feature) && (
+                      <button
+                        onClick={() => handleMoveToRoadmap(feature)}
+                        className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        title="Move to Roadmap"
+                      >
+                        <SafeIcon icon={FiMap} />
+                      </button>
+                    )}
+                    
                     {canUserEditFeature(feature) && (
                       <>
                         <button
@@ -1095,6 +1113,7 @@ const FeatureRequests = () => {
                     )}
                   </div>
                 </div>
+                
                 {/* Tags */}
                 {feature.tags && feature.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -1118,7 +1137,7 @@ const FeatureRequests = () => {
                       {renderWithMentions(feature.description)}
                     </p>
                   </div>
-
+                  
                   {/* Feature Attachments */}
                   {feature.attachments && feature.attachments.length > 0 && (
                     <div className="mb-6">
@@ -1129,13 +1148,13 @@ const FeatureRequests = () => {
                       <AttachmentViewer files={feature.attachments} />
                     </div>
                   )}
-
+                  
                   <div className="mt-6">
                     <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                       <SafeIcon icon={FiMessageCircle} className="mr-2 text-blue-600" />
                       <span>Comments ({comments[feature.id]?.length || 0})</span>
                     </h4>
-
+                    
                     {/* Comments List */}
                     <div className="space-y-4 max-h-96 overflow-y-auto mb-6 p-1">
                       {loadingComments[feature.id] ? (
@@ -1158,7 +1177,7 @@ const FeatureRequests = () => {
                       )}
                       <div ref={commentsEndRef} />
                     </div>
-
+                    
                     {/* Add Comment */}
                     {userProfile ? (
                       <div className="space-y-3">
@@ -1173,6 +1192,7 @@ const FeatureRequests = () => {
                           />
                           <MentionSuggestions textAreaRef={{ current: commentTextAreaRefs.current[feature.id] }} />
                         </div>
+                        
                         <FileUpload
                           onFilesUploaded={setCommentAttachments}
                           existingFiles={commentAttachments}
@@ -1180,6 +1200,7 @@ const FeatureRequests = () => {
                           disabled={commentLoading}
                           compact
                         />
+                        
                         <div className="flex justify-end">
                           <button
                             onClick={() => handleAddComment(feature.id)}
@@ -1205,7 +1226,7 @@ const FeatureRequests = () => {
               )}
             </motion.div>
           ))}
-
+          
           {filteredFeatures.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -1230,6 +1251,31 @@ const FeatureRequests = () => {
           )}
         </div>
       </div>
+      
+      {/* Move to Roadmap Modal */}
+      {showMoveToRoadmapModal && featureToMove && (
+        <MoveToRoadmapModal 
+          feature={featureToMove} 
+          onClose={() => setShowMoveToRoadmapModal(false)} 
+          onSuccess={(roadmapItem) => {
+            setShowMoveToRoadmapModal(false);
+            // Update feature status to reflect it's been moved to roadmap
+            const updatedFeatures = features.map(f => 
+              f.id === featureToMove.id 
+                ? {...f, status: 'planned'} 
+                : f
+            );
+            setFeatures(updatedFeatures);
+            setStatusMessage({
+              type: 'success',
+              message: 'Feature successfully moved to roadmap!'
+            });
+            setTimeout(() => {
+              setStatusMessage({ type: '', message: '' });
+            }, 3000);
+          }}
+        />
+      )}
     </div>
   );
 };
