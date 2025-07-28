@@ -14,14 +14,14 @@ const TestMentions = () => {
   const [result, setResult] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const textAreaRef = useRef(null);
-  const { 
-    renderWithMentions, 
-    processMentions, 
-    users, 
-    loading, 
-    mentionsTableExists, 
+  const {
+    renderWithMentions,
+    processMentions,
+    users,
+    loading,
+    mentionsTableExists,
     showSuggestions,
-    mentionSuggestions 
+    mentionSuggestions
   } = useMention();
 
   const handleSubmit = () => {
@@ -62,10 +62,10 @@ const TestMentions = () => {
           
           <div className={`p-4 rounded-lg ${mentionsTableExists ? 'bg-green-50' : 'bg-red-50'}`}>
             <div className="flex items-center">
-              <SafeIcon 
-                icon={mentionsTableExists ? FiCheck : FiAlertCircle} 
-                className={`mr-2 ${mentionsTableExists ? 'text-green-600' : 'text-red-600'}`} 
-              />
+              <SafeIcon
+                icon={mentionsTableExists ? FiCheck : FiAlertCircle}
+                className={`mr-2 ${mentionsTableExists ? 'text-green-600' : 'text-red-600'}`} />
+
               <div>
                 <p className={`text-sm font-medium ${mentionsTableExists ? 'text-green-800' : 'text-red-800'}`}>
                   Mentions Table
@@ -79,10 +79,10 @@ const TestMentions = () => {
           
           <div className={`p-4 rounded-lg ${showSuggestions ? 'bg-yellow-50' : 'bg-gray-50'}`}>
             <div className="flex items-center">
-              <SafeIcon 
-                icon={FiInfo} 
-                className={`mr-2 ${showSuggestions ? 'text-yellow-600' : 'text-gray-600'}`} 
-              />
+              <SafeIcon
+                icon={FiInfo}
+                className={`mr-2 ${showSuggestions ? 'text-yellow-600' : 'text-gray-600'}`} />
+
               <div>
                 <p className={`text-sm font-medium ${showSuggestions ? 'text-yellow-800' : 'text-gray-800'}`}>
                   Suggestions
@@ -128,11 +128,11 @@ const TestMentions = () => {
           </button>
           
           {showSuccess &&
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-green-50 border-l-4 border-green-500 p-4 mt-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-green-50 border-l-4 border-green-500 p-4 mt-4">
               <div className="flex">
                 <SafeIcon icon={FiCheck} className="flex-shrink-0 text-green-500 mt-0.5" />
                 <div className="ml-3">
@@ -145,7 +145,7 @@ const TestMentions = () => {
           }
           
           {text &&
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Preview with rendered mentions:
               </h3>
@@ -156,30 +156,30 @@ const TestMentions = () => {
           }
           
           {/* Available Users Debug */}
-          {users.length > 0 && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          {users.length > 0 &&
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <h3 className="text-sm font-medium text-gray-700 mb-2">
                 Available Users for Mentions:
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {users.slice(0, 6).map((user) => (
-                  <div key={user.id} className="text-xs bg-white p-2 rounded border">
+                {users.slice(0, 6).map((user) =>
+              <div key={user.id} className="text-xs bg-white p-2 rounded border">
                     <div className="font-medium">{user.nickname || user.full_name}</div>
                     <div className="text-gray-500">{user.role}</div>
                   </div>
-                ))}
-                {users.length > 6 && (
-                  <div className="text-xs bg-white p-2 rounded border text-center text-gray-500">
+              )}
+                {users.length > 6 &&
+              <div className="text-xs bg-white p-2 rounded border text-center text-gray-500">
                     +{users.length - 6} more
                   </div>
-                )}
+              }
               </div>
             </div>
-          )}
+          }
         </div>
       </motion.div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default TestMentions;

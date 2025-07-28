@@ -23,8 +23,8 @@ const UserMention = ({ userId, username, className = '' }) => {
         // In a future implementation, you could navigate to a user profile here
       }}>
       @{username}
-    </motion.span>
-  );
+    </motion.span>);
+
 };
 
 export default UserMention;

@@ -41,8 +41,8 @@ const MentionsTextarea = ({
         style={style}
         {...props} />
       <MentionSuggestions textAreaRef={textAreaRef} />
-    </div>
-  );
+    </div>);
+
 };
 
 export default MentionsTextarea;

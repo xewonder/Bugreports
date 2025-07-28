@@ -70,11 +70,11 @@ const MentionSuggestions = ({ textAreaRef }) => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
-        suggestionsRef.current &&
-        !suggestionsRef.current.contains(e.target) &&
-        textAreaRef.current &&
-        !textAreaRef.current.contains(e.target)
-      ) {
+      suggestionsRef.current &&
+      !suggestionsRef.current.contains(e.target) &&
+      textAreaRef.current &&
+      !textAreaRef.current.contains(e.target))
+      {
         setShowSuggestions(false);
       }
     };
@@ -126,17 +126,17 @@ const MentionSuggestions = ({ textAreaRef }) => {
         </div>
         <ul className="py-1">
           {mentionSuggestions.map((user, index) =>
-            <li
-              key={user.id}
-              className={`px-3 py-2 flex items-center space-x-2 cursor-pointer transition-colors ${
-                index === selectedIndex ?
-                'bg-blue-50 text-blue-700' :
-                'hover:bg-gray-50'
-              }`}
-              onClick={() => {
-                console.log('🖱️ Clicked on user:', user);
-                insertMention(user, textAreaRef);
-              }}>
+          <li
+            key={user.id}
+            className={`px-3 py-2 flex items-center space-x-2 cursor-pointer transition-colors ${
+            index === selectedIndex ?
+            'bg-blue-50 text-blue-700' :
+            'hover:bg-gray-50'}`
+            }
+            onClick={() => {
+              console.log('🖱️ Clicked on user:', user);
+              insertMention(user, textAreaRef);
+            }}>
 
               <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <SafeIcon icon={FiUser} className="text-blue-600 text-xs" />
@@ -153,8 +153,8 @@ const MentionSuggestions = ({ textAreaRef }) => {
           )}
         </ul>
       </motion.div>
-    </AnimatePresence>
-  );
+    </AnimatePresence>);
+
 };
 
 export default MentionSuggestions;

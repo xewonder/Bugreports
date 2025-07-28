@@ -1,7 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import UserMention from '../components/UserMention';
-import supabase from '../lib/supabase';
 
 const MentionContext = createContext();
 
@@ -14,46 +13,153 @@ export function MentionProvider({ children }) {
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [mentionsTableExists, setMentionsTableExists] = useState(false);
-
-  // Check if mentions table exists
-  useEffect(() => {
-    const checkMentionsTable = async () => {
-      try {
-        const { data, error } = await supabase.
-        from('user_mentions_mgg2024').
-        select('id').
-        limit(1).
-        maybeSingle();
-        const exists = !error || error.code !== '42P01';
-        console.log('Mentions table exists:', exists);
-        setMentionsTableExists(exists);
-      } catch (error) {
-        console.log('Mentions table may not exist yet:', error);
-        setMentionsTableExists(false);
-      }
-    };
-    checkMentionsTable();
-  }, []);
+  const [mentionsTableExists, setMentionsTableExists] = useState(true); // Always true for EasySite DB
 
   // Fetch all users for mention suggestions
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase.
-        from('profiles_mgg_2024').
-        select('id,full_name,nickname,role').
-        eq('is_active', true);
-        if (error) throw error;
-        console.log("Fetched users for mentions:", data?.length || 0, "users");
-        setUsers(data || []);
+        console.log('🔄 Fetching users for mentions...');
+        
+        // First, get the current user info to populate profiles if needed
+        const { data: currentUser, error: userError } = await window.ezsite.apis.getUserInfo();
+        
+        // Fetch profiles from the database
+        const { data: profilesData, error: profilesError } = await window.ezsite.apis.tablePage(31708, {
+          "PageNo": 1,
+          "PageSize": 100,
+          "OrderByField": "ID",
+          "IsAsc": true,
+          "Filters": [
+            {
+              "name": "is_active",
+              "op": "Equal",
+              "value": true
+            }
+          ]
+        });
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          
+          // If no profiles exist and we have a current user, create a profile
+          if (currentUser && !userError) {
+            console.log('📝 Creating profile for current user...');
+            await window.ezsite.apis.tableCreate(31708, {
+              "user_id": currentUser.ID || currentUser.id,
+              "full_name": currentUser.Name || currentUser.Email,
+              "nickname": currentUser.Name || currentUser.Email.split('@')[0],
+              "role": "user",
+              "is_active": true
+            });
+            
+            // Set the current user as the only available user
+            setUsers([{
+              id: currentUser.ID || currentUser.id,
+              full_name: currentUser.Name || currentUser.Email,
+              nickname: currentUser.Name || currentUser.Email.split('@')[0],
+              role: "user"
+            }]);
+          }
+        } else {
+          console.log('✅ Fetched users for mentions:', profilesData?.List?.length || 0, 'users');
+          
+          // Transform the data to match expected format
+          const transformedUsers = (profilesData?.List || []).map(profile => ({
+            id: profile.user_id,
+            full_name: profile.full_name,
+            nickname: profile.nickname,
+            role: profile.role
+          }));
+          
+          // If no users exist, create sample users for testing
+          if (transformedUsers.length === 0) {
+            console.log('📝 No users found, creating sample users...');
+            const sampleUsers = [
+              {
+                user_id: "user-1",
+                full_name: "John Doe", 
+                nickname: "john",
+                role: "admin",
+                is_active: true
+              },
+              {
+                user_id: "user-2",
+                full_name: "Jane Smith",
+                nickname: "jane", 
+                role: "developer",
+                is_active: true
+              },
+              {
+                user_id: "user-3",
+                full_name: "Bob Wilson",
+                nickname: "bob",
+                role: "user",
+                is_active: true
+              },
+              {
+                user_id: "user-4",
+                full_name: "Alice Johnson",
+                nickname: "alice",
+                role: "user", 
+                is_active: true
+              }
+            ];
+
+            // Create sample users
+            for (const user of sampleUsers) {
+              try {
+                await window.ezsite.apis.tableCreate(31708, user);
+                console.log('✅ Created sample user:', user.nickname);
+              } catch (err) {
+                console.log('Sample user might exist:', user.nickname);
+              }
+            }
+
+            // Set the sample users in state
+            setUsers(sampleUsers.map(user => ({
+              id: user.user_id,
+              full_name: user.full_name,
+              nickname: user.nickname, 
+              role: user.role
+            })));
+          } else {
+            setUsers(transformedUsers);
+          }
+          
+          // If current user exists but not in profiles, add them
+          if (currentUser && !userError) {
+            const userId = currentUser.ID || currentUser.id;
+            const userExists = transformedUsers.some(user => user.id === userId);
+            if (!userExists) {
+              console.log('📝 Adding current user to profiles...');
+              await window.ezsite.apis.tableCreate(31708, {
+                "user_id": userId,
+                "full_name": currentUser.Name || currentUser.Email,
+                "nickname": currentUser.Name || currentUser.Email.split('@')[0],
+                "role": "user",
+                "is_active": true
+              });
+              
+              // Add to the local state
+              const newUser = {
+                id: userId,
+                full_name: currentUser.Name || currentUser.Email,
+                nickname: currentUser.Name || currentUser.Email.split('@')[0],
+                role: "user"
+              };
+              setUsers(prev => [...prev, newUser]);
+            }
+          }
+        }
       } catch (error) {
         console.error('Error fetching users for mentions:', error);
       } finally {
         setLoading(false);
       }
     };
+    
     fetchUsers();
   }, []);
 
@@ -69,7 +175,7 @@ export function MentionProvider({ children }) {
     const filtered = users.
     filter((user) => {
       // Don't suggest the current user
-      if (userProfile && user.id === userProfile.id) return false;
+      if (userProfile && user.id === (userProfile.ID || userProfile.id)) return false;
       const nickname = user.nickname?.toLowerCase() || '';
       const fullName = user.full_name?.toLowerCase() || '';
       return nickname.includes(lowerQuery) || fullName.includes(lowerQuery);
@@ -133,17 +239,17 @@ export function MentionProvider({ children }) {
           window.innerWidth - 280 // Ensure dropdown doesn't go off-screen
         );
 
-        console.log("📍 Setting mention position:", { 
-          top, 
-          left, 
-          rect, 
-          lineNumber, 
+        console.log("📍 Setting mention position:", {
+          top,
+          left,
+          rect,
+          lineNumber,
           charPositionInLine,
           lineHeight,
           fontSize,
           charWidth
         });
-        
+
         setMentionPosition({ top, left });
         setShowSuggestions(true);
         return;
@@ -176,14 +282,14 @@ export function MentionProvider({ children }) {
       const mentionText = `@[${displayName}](${user.id})`;
       const newText = `${beforeMention}${mentionText}${afterMention}`;
 
-      console.log("✏️ Inserting mention:", { 
-        displayName, 
-        beforeMention, 
-        afterMention, 
-        lastAtIndex, 
-        cursorPosition, 
+      console.log("✏️ Inserting mention:", {
+        displayName,
+        beforeMention,
+        afterMention,
+        lastAtIndex,
+        cursorPosition,
         mentionText,
-        newText 
+        newText
       });
 
       // Update textarea value
@@ -207,7 +313,7 @@ export function MentionProvider({ children }) {
 
   // Store mention data when a mention is made
   const storeMention = async (mentionedUserId, contentType, contentId) => {
-    if (!userProfile || !mentionedUserId || userProfile.id === mentionedUserId || !mentionsTableExists) return;
+    if (!userProfile || !mentionedUserId || (userProfile.ID || userProfile.id) === mentionedUserId) return;
 
     try {
       console.log("💾 Storing mention:", { mentionedUserId, contentType, contentId });
@@ -219,19 +325,17 @@ export function MentionProvider({ children }) {
       }
 
       // Insert the mention
-      const { data, error } = await supabase.
-      from('user_mentions_mgg2024').
-      insert({
-        mentioned_user_id: mentionedUserId,
-        mentioned_by_id: userProfile.id,
-        content_type: contentType,
-        content_id: contentId
+      const { error } = await window.ezsite.apis.tableCreate(31709, {
+        "mentioned_user_id": mentionedUserId,
+        "mentioned_by_id": userProfile.ID || userProfile.id,
+        "content_type": contentType,
+        "content_id": contentId
       });
 
       if (error) {
         console.error('Error storing mention:', error);
       } else {
-        console.log('✅ Mention stored successfully:', data);
+        console.log('✅ Mention stored successfully');
       }
     } catch (error) {
       console.error('Error storing mention:', error);
@@ -265,7 +369,7 @@ export function MentionProvider({ children }) {
 
   // Process mentions after content is submitted
   const processMentions = (text, contentType, contentId) => {
-    if (!text || !mentionsTableExists) return [];
+    if (!text) return [];
 
     console.log("⚙️ Processing mentions in text:", text);
     console.log("📋 Content type:", contentType, "Content ID:", contentId);
@@ -341,8 +445,8 @@ export function MentionProvider({ children }) {
   return (
     <MentionContext.Provider value={value}>
       {children}
-    </MentionContext.Provider>
-  );
+    </MentionContext.Provider>);
+
 }
 
 export function useMention() {

@@ -74,14 +74,14 @@ const CommentWithMentions = ({
           className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors relative z-10">
 
           {loading ?
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
-            <SafeIcon icon={FiSend} />
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
+          <SafeIcon icon={FiSend} />
           }
           <span>Submit</span>
         </button>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default CommentWithMentions;
