@@ -24,12 +24,12 @@ const UserNotifications = () => {
   useEffect(() => {
     const checkMentionsTable = async () => {
       try {
-        const { data, error } = await supabase
-          .from('user_mentions_mgg2024')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-        
+        const { data, error } = await supabase.
+        from('user_mentions_mgg2024').
+        select('id').
+        limit(1).
+        maybeSingle();
+
         const exists = !error || error.code !== '42P01';
         console.log('Mentions table exists:', exists);
         setMentionsTableExists(exists);
@@ -38,7 +38,7 @@ const UserNotifications = () => {
         setMentionsTableExists(false);
       }
     };
-    
+
     checkMentionsTable();
   }, []);
 
@@ -50,30 +50,30 @@ const UserNotifications = () => {
       try {
         setLoading(true);
         console.log("Fetching mentions for user:", userProfile.id);
-        
-        const { data, error } = await supabase
-          .from('user_mentions_mgg2024')
-          .select(`
+
+        const { data, error } = await supabase.
+        from('user_mentions_mgg2024').
+        select(`
             id,
             seen,
             created_at,
             mentioned_by:mentioned_by_id(id, full_name, nickname),
             content_type,
             content_id
-          `)
-          .eq('mentioned_user_id', userProfile.id)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
+          `).
+        eq('mentioned_user_id', userProfile.id).
+        order('created_at', { ascending: false }).
+        limit(20);
+
         if (error) throw error;
-        
+
         console.log("Fetched mentions:", data);
-        
+
         // Process notifications to add content links
-        const processedNotifications = data.map(notification => {
+        const processedNotifications = data.map((notification) => {
           let contentLink = '';
           let contentTitle = '';
-          
+
           switch (notification.content_type) {
             case 'bug':
               contentLink = `/bugs/${notification.content_id}`;
@@ -115,39 +115,39 @@ const UserNotifications = () => {
               contentLink = '/';
               contentTitle = 'content';
           }
-          
+
           return { ...notification, contentLink, contentTitle };
         });
-        
+
         setNotifications(processedNotifications);
-        setUnreadCount(processedNotifications.filter(n => !n.seen).length);
+        setUnreadCount(processedNotifications.filter((n) => !n.seen).length);
       } catch (error) {
         console.error('Error fetching notifications:', error);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchNotifications();
-    
+
     // Set up real-time subscription only if table exists
     if (mentionsTableExists) {
-      const subscription = supabase
-        .channel('user_mentions')
-        .on('postgres_changes', 
-          { 
-            event: 'INSERT', 
-            schema: 'public', 
-            table: 'user_mentions_mgg2024',
-            filter: `mentioned_user_id=eq.${userProfile.id}`
-          }, 
-          payload => {
-            // Add new notification
-            fetchNotifications();
-          }
-        )
-        .subscribe();
-      
+      const subscription = supabase.
+      channel('user_mentions').
+      on('postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'user_mentions_mgg2024',
+        filter: `mentioned_user_id=eq.${userProfile.id}`
+      },
+      (payload) => {
+        // Add new notification
+        fetchNotifications();
+      }
+      ).
+      subscribe();
+
       return () => {
         subscription.unsubscribe();
       };
@@ -157,20 +157,20 @@ const UserNotifications = () => {
   // Mark notification as read
   const markAsRead = async (notificationId) => {
     if (!mentionsTableExists) return;
-    
+
     try {
-      const { error } = await supabase
-        .from('user_mentions_mgg2024')
-        .update({ seen: true })
-        .eq('id', notificationId);
-      
+      const { error } = await supabase.
+      from('user_mentions_mgg2024').
+      update({ seen: true }).
+      eq('id', notificationId);
+
       if (error) throw error;
-      
+
       // Update local state
-      setNotifications(notifications.map(notification => 
-        notification.id === notificationId ? { ...notification, seen: true } : notification
+      setNotifications(notifications.map((notification) =>
+      notification.id === notificationId ? { ...notification, seen: true } : notification
       ));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -179,18 +179,18 @@ const UserNotifications = () => {
   // Mark all notifications as read
   const markAllAsRead = async () => {
     if (notifications.length === 0 || !mentionsTableExists) return;
-    
+
     try {
-      const { error } = await supabase
-        .from('user_mentions_mgg2024')
-        .update({ seen: true })
-        .eq('mentioned_user_id', userProfile.id)
-        .eq('seen', false);
-      
+      const { error } = await supabase.
+      from('user_mentions_mgg2024').
+      update({ seen: true }).
+      eq('mentioned_user_id', userProfile.id).
+      eq('seen', false);
+
       if (error) throw error;
-      
+
       // Update local state
-      setNotifications(notifications.map(notification => ({ ...notification, seen: true })));
+      setNotifications(notifications.map((notification) => ({ ...notification, seen: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
@@ -216,64 +216,64 @@ const UserNotifications = () => {
     <div className="relative">
       <button
         onClick={() => setShowNotifications(!showNotifications)}
-        className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-      >
+        className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+
         <SafeIcon icon={FiBell} className="text-xl" />
-        {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+        {unreadCount > 0 &&
+        <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
-        )}
+        }
       </button>
 
       <AnimatePresence>
-        {showNotifications && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
-          >
+        {showNotifications &&
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+
             <div className="flex items-center justify-between p-3 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="text-xs text-blue-600 hover:text-blue-800"
-                >
+              {unreadCount > 0 &&
+            <button
+              onClick={markAllAsRead}
+              className="text-xs text-blue-600 hover:text-blue-800">
+
                   Mark all as read
                 </button>
-              )}
+            }
             </div>
             
             <div className="max-h-96 overflow-y-auto">
-              {loading ? (
-                <div className="p-4 text-center">
+              {loading ?
+            <div className="p-4 text-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="text-sm text-gray-500 mt-2">Loading notifications...</p>
-                </div>
-              ) : !mentionsTableExists ? (
-                <div className="p-4 text-center">
+                </div> :
+            !mentionsTableExists ?
+            <div className="p-4 text-center">
                   <SafeIcon icon={FiBell} className="text-gray-400 text-2xl mx-auto mb-2" />
                   <p className="text-sm text-gray-500">Notifications will appear here</p>
-                </div>
-              ) : notifications.length > 0 ? (
-                notifications.map(notification => {
-                  const mentionerName = getDisplayName(notification.mentioned_by);
-                  
-                  return (
-                    <Link
-                      key={notification.id}
-                      to={notification.contentLink}
-                      className={`block p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${!notification.seen ? 'bg-blue-50' : ''}`}
-                      onClick={() => markAsRead(notification.id)}
-                    >
+                </div> :
+            notifications.length > 0 ?
+            notifications.map((notification) => {
+              const mentionerName = getDisplayName(notification.mentioned_by);
+
+              return (
+                <Link
+                  key={notification.id}
+                  to={notification.contentLink}
+                  className={`block p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors ${!notification.seen ? 'bg-blue-50' : ''}`}
+                  onClick={() => markAsRead(notification.id)}>
+
                       <div className="flex items-start space-x-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${!notification.seen ? 'bg-blue-100' : 'bg-gray-100'}`}>
                           <SafeIcon
-                            icon={getContentIcon(notification.content_type)}
-                            className={!notification.seen ? 'text-blue-600' : 'text-gray-600'}
-                          />
+                        icon={getContentIcon(notification.content_type)}
+                        className={!notification.seen ? 'text-blue-600' : 'text-gray-600'} />
+
                         </div>
                         <div className="flex-1">
                           <p className="text-sm text-gray-900">
@@ -283,35 +283,35 @@ const UserNotifications = () => {
                             {format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                           </p>
                         </div>
-                        {!notification.seen && (
-                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                        )}
+                        {!notification.seen &&
+                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    }
                       </div>
-                    </Link>
-                  );
-                })
-              ) : (
-                <div className="p-4 text-center">
+                    </Link>);
+
+            }) :
+
+            <div className="p-4 text-center">
                   <SafeIcon icon={FiBell} className="text-gray-400 text-2xl mx-auto mb-2" />
                   <p className="text-sm text-gray-500">No notifications yet</p>
                 </div>
-              )}
+            }
             </div>
             
             <div className="p-3 border-t border-gray-200 flex justify-center">
               <button
-                onClick={() => setShowNotifications(false)}
-                className="text-xs text-gray-500 hover:text-gray-700 flex items-center space-x-1"
-              >
+              onClick={() => setShowNotifications(false)}
+              className="text-xs text-gray-500 hover:text-gray-700 flex items-center space-x-1">
+
                 <SafeIcon icon={FiX} className="text-sm" />
                 <span>Close</span>
               </button>
             </div>
           </motion.div>
-        )}
+        }
       </AnimatePresence>
-    </div>
-  );
+    </div>);
+
 };
 
 export default UserNotifications;

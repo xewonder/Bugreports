@@ -1,11 +1,11 @@
-import React, {useState, useRef} from 'react';
-import {motion} from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
-import {FiSend} from 'react-icons/fi';
+import { FiSend } from 'react-icons/fi';
 import FileUpload from './FileUpload';
 import EnhancedTextarea from './EnhancedTextarea';
 import MentionSuggestions from './MentionSuggestions';
-import {useMention} from '../contexts/MentionContext';
+import { useMention } from '../contexts/MentionContext';
 
 /**
  * A reusable comment input component with mention functionality
@@ -30,7 +30,7 @@ const CommentWithMentions = ({
 }) => {
   const [commentText, setCommentText] = useState('');
   const textAreaRef = useRef(null);
-  const {processMentions} = useMention();
+  const { processMentions } = useMention();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,7 +38,7 @@ const CommentWithMentions = ({
 
     // Process mentions BEFORE submitting
     if (commentText.trim()) {
-      console.log("Processing mentions before submit:", {commentText, contentType, contentId});
+      console.log("Processing mentions before submit:", { commentText, contentType, contentId });
       processMentions(commentText, contentType, contentId);
     }
 
@@ -55,8 +55,8 @@ const CommentWithMentions = ({
           onChange={(e) => setCommentText(e.target.value)}
           placeholder={placeholder}
           disabled={loading}
-          className="mentions w-full"
-        />
+          className="mentions w-full" />
+
         <MentionSuggestions textAreaRef={textAreaRef} />
       </div>
 
@@ -66,19 +66,17 @@ const CommentWithMentions = ({
           existingFiles={attachments}
           maxFiles={2}
           disabled={loading}
-          compact
-        />
+          compact />
 
         <button
           onClick={handleSubmit}
-          disabled={(!commentText.trim() && attachments.length === 0) || loading}
-          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors relative z-10"
-        >
-          {loading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          ) : (
+          disabled={!commentText.trim() && attachments.length === 0 || loading}
+          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors relative z-10">
+
+          {loading ?
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
             <SafeIcon icon={FiSend} />
-          )}
+          }
           <span>Submit</span>
         </button>
       </div>

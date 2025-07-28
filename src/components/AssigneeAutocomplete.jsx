@@ -45,11 +45,11 @@ const AssigneeAutocomplete = ({
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
-        suggestionsRef.current && 
-        !suggestionsRef.current.contains(e.target) && 
-        inputRef.current && 
-        !inputRef.current.contains(e.target)
-      ) {
+      suggestionsRef.current &&
+      !suggestionsRef.current.contains(e.target) &&
+      inputRef.current &&
+      !inputRef.current.contains(e.target))
+      {
         setShowSuggestions(false);
       }
     };
@@ -63,15 +63,15 @@ const AssigneeAutocomplete = ({
   const fetchAssigneeSuggestions = async () => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('profiles_mgg_2024')
-        .select('id, full_name, nickname, role')
-        .in('role', ['admin', 'developer'])
-        .eq('is_active', true);
-      
+
+      const { data, error } = await supabase.
+      from('profiles_mgg_2024').
+      select('id, full_name, nickname, role').
+      in('role', ['admin', 'developer']).
+      eq('is_active', true);
+
       if (error) throw error;
-      
+
       setSuggestions(data || []);
     } catch (error) {
       console.error('Error fetching assignee suggestions:', error);
@@ -82,9 +82,9 @@ const AssigneeAutocomplete = ({
 
   const filterSuggestions = (query) => {
     if (!query) return suggestions;
-    
+
     const lowerQuery = query.toLowerCase().trim();
-    return suggestions.filter(user => {
+    return suggestions.filter((user) => {
       const fullName = (user.full_name || '').toLowerCase();
       const nickname = (user.nickname || '').toLowerCase();
       return fullName.includes(lowerQuery) || nickname.includes(lowerQuery);
@@ -94,7 +94,7 @@ const AssigneeAutocomplete = ({
   const handleInputChange = (e) => {
     const newValue = e.target.value;
     setInputValue(newValue);
-    
+
     // Only call onChange if explicitly provided
     if (onChange) {
       onChange(newValue);
@@ -108,12 +108,12 @@ const AssigneeAutocomplete = ({
   const handleSelectSuggestion = (suggestion) => {
     const displayName = suggestion.nickname || suggestion.full_name || '';
     setInputValue(displayName);
-    
+
     // Only call onChange if explicitly provided
     if (onChange) {
       onChange(displayName);
     }
-    
+
     setShowSuggestions(false);
   };
 
@@ -132,40 +132,40 @@ const AssigneeAutocomplete = ({
           placeholder={placeholder}
           disabled={disabled}
           className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
-          {...props}
-        />
+          {...props} />
+
         <button
           type="button"
           onClick={() => setShowSuggestions(!showSuggestions)}
           className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          disabled={disabled}
-        >
+          disabled={disabled}>
+
           <SafeIcon icon={FiChevronDown} />
         </button>
       </div>
       
       <AnimatePresence>
-        {showSuggestions && (
-          <motion.div
-            ref={suggestionsRef}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center p-4">
+        {showSuggestions &&
+        <motion.div
+          ref={suggestionsRef}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+
+            {loading ?
+          <div className="flex items-center justify-center p-4">
                 <SafeIcon icon={FiLoader} className="animate-spin mr-2" />
                 <span className="text-sm text-gray-500">Loading...</span>
-              </div>
-            ) : filteredSuggestions.length > 0 ? (
-              <ul className="py-1">
-                {filteredSuggestions.map(suggestion => (
-                  <li
-                    key={suggestion.id}
-                    onClick={() => handleSelectSuggestion(suggestion)}
-                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2"
-                  >
+              </div> :
+          filteredSuggestions.length > 0 ?
+          <ul className="py-1">
+                {filteredSuggestions.map((suggestion) =>
+            <li
+              key={suggestion.id}
+              onClick={() => handleSelectSuggestion(suggestion)}
+              className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2">
+
                     <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                       <SafeIcon icon={FiUser} className="text-blue-600 text-xs" />
                     </div>
@@ -178,18 +178,18 @@ const AssigneeAutocomplete = ({
                       </p>
                     </div>
                   </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="p-4 text-center text-sm text-gray-500">
+            )}
+              </ul> :
+
+          <div className="p-4 text-center text-sm text-gray-500">
                 No assignees found
               </div>
-            )}
+          }
           </motion.div>
-        )}
+        }
       </AnimatePresence>
-    </div>
-  );
+    </div>);
+
 };
 
 export default AssigneeAutocomplete;

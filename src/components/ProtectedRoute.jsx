@@ -16,8 +16,8 @@ const ProtectedRoute = ({ children, adminOnly = false, technicianOnly = false })
         <SafeIcon icon={FiLoader} className="text-blue-600 text-4xl animate-spin mb-4" />
         <p className="text-gray-600">Initializing authentication...</p>
         <p className="text-sm text-gray-500 mt-2">This may take a few seconds</p>
-      </div>
-    );
+      </div>);
+
   }
 
   // Show error if there's an auth error
@@ -32,26 +32,26 @@ const ProtectedRoute = ({ children, adminOnly = false, technicianOnly = false })
         <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={retryProfileFetch}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
-          >
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2">
+
             <SafeIcon icon={FiRefreshCw} />
             <span>Retry</span>
           </button>
           <button
             onClick={() => window.location.href = '/login'}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+
             Go to Login
           </button>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-          >
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+
             Refresh Page
           </button>
         </div>
-      </div>
-    );
+      </div>);
+
   }
 
   // Show loading if still loading after initialization
@@ -61,8 +61,8 @@ const ProtectedRoute = ({ children, adminOnly = false, technicianOnly = false })
         <SafeIcon icon={FiLoader} className="text-blue-600 text-4xl animate-spin mb-4" />
         <p className="text-gray-600">Loading your profile...</p>
         <p className="text-sm text-gray-500 mt-2">Please wait a moment</p>
-      </div>
-    );
+      </div>);
+
   }
 
   if (!userProfile) {
@@ -79,8 +79,8 @@ const ProtectedRoute = ({ children, adminOnly = false, technicianOnly = false })
           This area requires administrator privileges.
         </p>
         <Navigate to="/" replace />
-      </div>
-    );
+      </div>);
+
   }
 
   if (technicianOnly && !isTechnician()) {
@@ -92,8 +92,8 @@ const ProtectedRoute = ({ children, adminOnly = false, technicianOnly = false })
           This area requires technician or administrator privileges.
         </p>
         <Navigate to="/" replace />
-      </div>
-    );
+      </div>);
+
   }
 
   return children;

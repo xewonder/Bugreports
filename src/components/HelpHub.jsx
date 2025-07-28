@@ -13,13 +13,13 @@ const HelpHub = () => {
   const { userProfile } = useAuth();
   const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState([
-    {
-      id: 'welcome',
-      type: 'bot',
-      text: 'Welcome to MGG™ Help! How can I assist you today?',
-      timestamp: new Date()
-    }
-  ]);
+  {
+    id: 'welcome',
+    type: 'bot',
+    text: 'Welcome to MGG™ Help! How can I assist you today?',
+    timestamp: new Date()
+  }]
+  );
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -35,55 +35,55 @@ const HelpHub = () => {
 
   // Help categories and quick actions
   const helpCategories = [
-    {
-      id: 'getting-started',
-      title: 'Getting Started',
-      icon: FiHelpCircle,
-      description: 'Learn the basics of MGG™',
-      items: [
-        'How to create your first bug report',
-        'Understanding user roles and permissions',
-        'Navigating the dashboard',
-        'Setting up your profile'
-      ]
-    },
-    {
-      id: 'bug-reporting',
-      title: 'Bug Reporting',
-      icon: FiMessageCircle,
-      description: 'Master bug reporting features',
-      items: [
-        'How to write effective bug reports',
-        'Adding attachments and screenshots',
-        'Using severity and priority levels',
-        'Tracking bug status updates'
-      ]
-    },
-    {
-      id: 'features',
-      title: 'Feature Requests',
-      icon: FiBook,
-      description: 'Request and track new features',
-      items: [
-        'Submitting feature requests',
-        'Voting on community features',
-        'Understanding the roadmap',
-        'Feature status lifecycle'
-      ]
-    },
-    {
-      id: 'collaboration',
-      title: 'Collaboration',
-      icon: FiLifeBuoy,
-      description: 'Work effectively with your team',
-      items: [
-        'Using @mentions in comments',
-        'Participating in discussions',
-        'Power prompts and tips',
-        'Notification settings'
-      ]
-    }
-  ];
+  {
+    id: 'getting-started',
+    title: 'Getting Started',
+    icon: FiHelpCircle,
+    description: 'Learn the basics of MGG™',
+    items: [
+    'How to create your first bug report',
+    'Understanding user roles and permissions',
+    'Navigating the dashboard',
+    'Setting up your profile']
+
+  },
+  {
+    id: 'bug-reporting',
+    title: 'Bug Reporting',
+    icon: FiMessageCircle,
+    description: 'Master bug reporting features',
+    items: [
+    'How to write effective bug reports',
+    'Adding attachments and screenshots',
+    'Using severity and priority levels',
+    'Tracking bug status updates']
+
+  },
+  {
+    id: 'features',
+    title: 'Feature Requests',
+    icon: FiBook,
+    description: 'Request and track new features',
+    items: [
+    'Submitting feature requests',
+    'Voting on community features',
+    'Understanding the roadmap',
+    'Feature status lifecycle']
+
+  },
+  {
+    id: 'collaboration',
+    title: 'Collaboration',
+    icon: FiLifeBuoy,
+    description: 'Work effectively with your team',
+    items: [
+    'Using @mentions in comments',
+    'Participating in discussions',
+    'Power prompts and tips',
+    'Notification settings']
+
+  }];
+
 
   // Quick help responses
   const quickResponses = {
@@ -106,7 +106,7 @@ const HelpHub = () => {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
@@ -130,7 +130,7 @@ const HelpHub = () => {
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
     }, 1500);
   };
@@ -157,23 +157,23 @@ const HelpHub = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <AnimatePresence>
-        {showChat && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className="bg-white rounded-lg shadow-xl border border-gray-200 mb-4 flex flex-col"
-            style={{ width: '380px', height: '500px' }}
-          >
+        {showChat &&
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.9 }}
+          className="bg-white rounded-lg shadow-xl border border-gray-200 mb-4 flex flex-col"
+          style={{ width: '380px', height: '500px' }}>
+
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-t-lg flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <img 
-                    src="https://ph-files.imgix.net/c6228782-80c0-4dfe-b90a-25b9a704de70.png?auto=format" 
-                    alt="MGG Logo" 
-                    className="w-8 h-8 object-contain" 
-                  />
+                  <img
+                  src="https://ph-files.imgix.net/c6228782-80c0-4dfe-b90a-25b9a704de70.png?auto=format"
+                  alt="MGG Logo"
+                  className="w-8 h-8 object-contain" />
+
                 </div>
                 <div>
                   <h3 className="font-medium">MGG™ Help Hub</h3>
@@ -181,22 +181,22 @@ const HelpHub = () => {
                 </div>
               </div>
               <button
-                onClick={toggleChat}
-                className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded-full transition-colors"
-              >
+              onClick={toggleChat}
+              className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded-full transition-colors">
+
                 <SafeIcon icon={FiX} />
               </button>
             </div>
 
             {/* Content */}
-            {selectedCategory ? (
-              // Category details view
-              <div className="flex-1 flex flex-col">
+            {selectedCategory ?
+          // Category details view
+          <div className="flex-1 flex flex-col">
                 <div className="p-4 border-b border-gray-200">
                   <button
-                    onClick={() => setSelectedCategory(null)}
-                    className="text-blue-600 hover:text-blue-800 text-sm mb-2"
-                  >
+                onClick={() => setSelectedCategory(null)}
+                className="text-blue-600 hover:text-blue-800 text-sm mb-2">
+
                     ← Back to Help Topics
                   </button>
                   <h4 className="font-medium text-gray-900">{selectedCategory.title}</h4>
@@ -204,67 +204,67 @@ const HelpHub = () => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="space-y-2">
-                    {selectedCategory.items.map((item, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleQuickAction(item)}
-                        className="w-full text-left p-3 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors"
-                      >
+                    {selectedCategory.items.map((item, index) =>
+                <button
+                  key={index}
+                  onClick={() => handleQuickAction(item)}
+                  className="w-full text-left p-3 hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
+
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-gray-700">{item}</span>
                           <SafeIcon icon={FiChevronRight} className="text-gray-400 text-sm" />
                         </div>
                       </button>
-                    ))}
+                )}
                   </div>
                 </div>
-              </div>
-            ) : (
-              // Main chat interface
-              <>
+              </div> :
+
+          // Main chat interface
+          <>
                 {/* Quick Help Categories */}
                 <div className="p-4 border-b border-gray-200">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">Quick Help Topics</h4>
                   <div className="grid grid-cols-2 gap-2">
-                    {helpCategories.map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category)}
-                        className="p-2 text-left hover:bg-blue-50 rounded-lg border border-gray-200 transition-colors"
-                      >
+                    {helpCategories.map((category) =>
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category)}
+                  className="p-2 text-left hover:bg-blue-50 rounded-lg border border-gray-200 transition-colors">
+
                         <div className="flex items-center space-x-2">
                           <SafeIcon icon={category.icon} className="text-blue-600 text-sm" />
                           <span className="text-xs font-medium text-gray-700">{category.title}</span>
                         </div>
                       </button>
-                    ))}
+                )}
                   </div>
                 </div>
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {messages.map(message => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+                  {messages.map((message) =>
+              <div
+                key={message.id}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+
                       <div
-                        className={`max-w-[85%] p-3 rounded-lg ${
-                          message.type === 'user'
-                            ? 'bg-blue-600 text-white rounded-tr-none'
-                            : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                        }`}
-                      >
+                  className={`max-w-[85%] p-3 rounded-lg ${
+                  message.type === 'user' ?
+                  'bg-blue-600 text-white rounded-tr-none' :
+                  'bg-gray-100 text-gray-800 rounded-tl-none'}`
+                  }>
+
                         <p className="text-sm whitespace-pre-line">{message.text}</p>
                         <p className="text-xs opacity-70 text-right mt-1">
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>
-                  ))}
+              )}
 
-                  {isTyping && (
-                    <div className="flex justify-start">
+                  {isTyping &&
+              <div className="flex justify-start">
                       <div className="bg-gray-100 text-gray-800 p-3 rounded-lg rounded-tl-none max-w-[85%]">
                         <div className="flex space-x-1">
                           <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
@@ -273,7 +273,7 @@ const HelpHub = () => {
                         </div>
                       </div>
                     </div>
-                  )}
+              }
                   <div ref={messagesEndRef} />
                 </div>
 
@@ -281,39 +281,39 @@ const HelpHub = () => {
                 <div className="border-t border-gray-200 p-3">
                   <div className="flex items-center space-x-2">
                     <textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask me anything about MGG™..."
-                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                      rows="2"
-                    />
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me anything about MGG™..."
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows="2" />
+
                     <button
-                      onClick={handleSendMessage}
-                      disabled={!input.trim()}
-                      className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-blue-400 transition-colors"
-                    >
+                  onClick={handleSendMessage}
+                  disabled={!input.trim()}
+                  className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:bg-blue-400 transition-colors">
+
                       <SafeIcon icon={FiSend} />
                     </button>
                   </div>
                   
                   {/* Quick action buttons */}
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {['How to report a bug?', 'Request a feature', 'Use @mentions'].map((action) => (
-                      <button
-                        key={action}
-                        onClick={() => handleQuickAction(action)}
-                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
-                      >
+                    {['How to report a bug?', 'Request a feature', 'Use @mentions'].map((action) =>
+                <button
+                  key={action}
+                  onClick={() => handleQuickAction(action)}
+                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors">
+
                         {action}
                       </button>
-                    ))}
+                )}
                   </div>
                 </div>
               </>
-            )}
+          }
           </motion.div>
-        )}
+        }
       </AnimatePresence>
 
       {/* Chat toggle button */}
@@ -321,12 +321,12 @@ const HelpHub = () => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={toggleChat}
-        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
-      >
+        className="w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors">
+
         <SafeIcon icon={showChat ? FiX : FiMessageCircle} className="text-xl" />
       </motion.button>
-    </div>
-  );
+    </div>);
+
 };
 
 export default HelpHub;

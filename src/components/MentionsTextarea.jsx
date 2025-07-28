@@ -39,8 +39,7 @@ const MentionsTextarea = ({
         minRows={minRows}
         maxRows={maxRows}
         style={style}
-        {...props}
-      />
+        {...props} />
       <MentionSuggestions textAreaRef={textAreaRef} />
     </div>
   );

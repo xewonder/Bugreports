@@ -4,16 +4,16 @@ import SafeIcon from '../common/SafeIcon';
 import * as FiIcons from 'react-icons/fi';
 import supabase from '../lib/supabase';
 
-const { 
-  FiUpload, FiX, FiFile, FiImage, FiVideo, 
-  FiDownload, FiEye, FiTrash2, FiLoader 
+const {
+  FiUpload, FiX, FiFile, FiImage, FiVideo,
+  FiDownload, FiEye, FiTrash2, FiLoader
 } = FiIcons;
 
 // Simple UUID generator to avoid external dependency
 const generateUUID = () => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    const v = c === 'x' ? r : r & 0x3 | 0x8;
     return v.toString(16);
   });
 };
@@ -24,14 +24,14 @@ const FileUpload = ({
   maxFiles = 5,
   maxFileSize = 10 * 1024 * 1024, // 10MB
   acceptedTypes = [
-    'image/*',
-    'video/*',
-    '.pdf',
-    '.doc',
-    '.docx',
-    '.txt',
-    '.zip'
-  ],
+  'image/*',
+  'video/*',
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.txt',
+  '.zip'],
+
   disabled = false,
   showPreview = true,
   compact = false
@@ -62,7 +62,7 @@ const FileUpload = ({
       return `File size must be less than ${formatFileSize(maxFileSize)}`;
     }
 
-    const isAccepted = acceptedTypes.some(type => {
+    const isAccepted = acceptedTypes.some((type) => {
       if (type.startsWith('.')) {
         return file.name.toLowerCase().endsWith(type);
       }
@@ -86,26 +86,26 @@ const FileUpload = ({
 
     try {
       // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('attachments')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-          onUploadProgress: (progress) => {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setUploadProgress(prev => ({
-              ...prev,
-              [file.name]: percent
-            }));
-          }
-        });
+      const { data, error } = await supabase.storage.
+      from('attachments').
+      upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        onUploadProgress: (progress) => {
+          const percent = Math.round(progress.loaded / progress.total * 100);
+          setUploadProgress((prev) => ({
+            ...prev,
+            [file.name]: percent
+          }));
+        }
+      });
 
       if (error) throw error;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('attachments')
-        .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.
+      from('attachments').
+      getPublicUrl(filePath);
 
       return {
         id: generateUUID(),
@@ -188,9 +188,9 @@ const FileUpload = ({
     // Delete from Supabase Storage if it has a path
     if (file.path) {
       try {
-        await supabase.storage
-          .from('attachments')
-          .remove([file.path]);
+        await supabase.storage.
+        from('attachments').
+        remove([file.path]);
       } catch (error) {
         console.error('Error deleting file:', error);
       }
@@ -216,19 +216,19 @@ const FileUpload = ({
             accept={acceptedTypes.join(',')}
             onChange={(e) => handleFiles(e.target.files)}
             className="hidden"
-            disabled={disabled || uploading}
-          />
+            disabled={disabled || uploading} />
+
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading || files.length >= maxFiles}
-            className="flex items-center space-x-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50"
-          >
-            {uploading ? (
-              <SafeIcon icon={FiLoader} className="animate-spin" />
-            ) : (
-              <SafeIcon icon={FiUpload} />
-            )}
+            className="flex items-center space-x-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:opacity-50">
+
+            {uploading ?
+            <SafeIcon icon={FiLoader} className="animate-spin" /> :
+
+            <SafeIcon icon={FiUpload} />
+            }
             <span>Attach</span>
           </button>
           <span className="text-xs text-gray-500">
@@ -236,27 +236,27 @@ const FileUpload = ({
           </span>
         </div>
 
-        {files.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {files.map((file, index) => (
-              <div
-                key={file.id || index}
-                className="flex items-center space-x-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs"
-              >
+        {files.length > 0 &&
+        <div className="flex flex-wrap gap-1">
+            {files.map((file, index) =>
+          <div
+            key={file.id || index}
+            className="flex items-center space-x-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+
                 <SafeIcon icon={getFileIcon(file.type, file.name)} className="text-xs" />
                 <span className="truncate max-w-20">{file.name}</span>
                 <button
-                  onClick={() => removeFile(index)}
-                  className="text-blue-500 hover:text-red-600"
-                >
+              onClick={() => removeFile(index)}
+              className="text-blue-500 hover:text-red-600">
+
                   <SafeIcon icon={FiX} className="text-xs" />
                 </button>
               </div>
-            ))}
+          )}
           </div>
-        )}
-      </div>
-    );
+        }
+      </div>);
+
   }
 
   return (
@@ -264,17 +264,17 @@ const FileUpload = ({
       {/* Upload Area */}
       <div
         className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-          dragActive
-            ? 'border-blue-500 bg-blue-50'
-            : disabled
-            ? 'border-gray-200 bg-gray-50'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
+        dragActive ?
+        'border-blue-500 bg-blue-50' :
+        disabled ?
+        'border-gray-200 bg-gray-50' :
+        'border-gray-300 hover:border-gray-400'}`
+        }
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-      >
+        onDragLeave={handleDragLeave}>
+
         <input
           ref={fileInputRef}
           type="file"
@@ -282,13 +282,13 @@ const FileUpload = ({
           accept={acceptedTypes.join(',')}
           onChange={(e) => handleFiles(e.target.files)}
           className="hidden"
-          disabled={disabled || uploading}
-        />
+          disabled={disabled || uploading} />
+
         <div className="space-y-2">
           <SafeIcon
             icon={uploading ? FiLoader : FiUpload}
-            className={`text-4xl mx-auto text-gray-400 ${uploading ? 'animate-spin' : ''}`}
-          />
+            className={`text-4xl mx-auto text-gray-400 ${uploading ? 'animate-spin' : ''}`} />
+
           <div>
             <p className="text-gray-600">
               {uploading ? 'Uploading files...' : 'Drop files here or click to browse'}
@@ -304,51 +304,51 @@ const FileUpload = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled || uploading || files.length >= maxFiles}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors"
-          >
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors">
+
             {uploading ? 'Uploading...' : 'Choose Files'}
           </button>
         </div>
       </div>
 
       {/* Upload Progress */}
-      {Object.keys(uploadProgress).length > 0 && (
-        <div className="space-y-2">
-          {Object.entries(uploadProgress).map(([fileName, progress]) => (
-            <div key={fileName} className="space-y-1">
+      {Object.keys(uploadProgress).length > 0 &&
+      <div className="space-y-2">
+          {Object.entries(uploadProgress).map(([fileName, progress]) =>
+        <div key={fileName} className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span className="truncate">{fileName}</span>
                 <span>{progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }} />
+
               </div>
             </div>
-          ))}
+        )}
         </div>
-      )}
+      }
 
       {/* File List */}
-      {files.length > 0 && showPreview && (
-        <div className="space-y-2">
+      {files.length > 0 && showPreview &&
+      <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">
             Attached Files ({files.length})
           </h4>
           <div className="grid grid-cols-1 gap-2">
-            {files.map((file, index) => (
-              <motion.div
-                key={file.id || index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
-              >
+            {files.map((file, index) =>
+          <motion.div
+            key={file.id || index}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+
                 <SafeIcon
-                  icon={getFileIcon(file.type, file.name)}
-                  className="text-blue-600 text-xl flex-shrink-0"
-                />
+              icon={getFileIcon(file.type, file.name)}
+              className="text-blue-600 text-xl flex-shrink-0" />
+
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {file.name}
@@ -359,35 +359,35 @@ const FileUpload = ({
                 </div>
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={() => openFile(file)}
-                    className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                    title="View file"
-                  >
+                onClick={() => openFile(file)}
+                className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                title="View file">
+
                     <SafeIcon icon={FiEye} />
                   </button>
                   <a
-                    href={file.url}
-                    download={file.name}
-                    className="p-1 text-gray-400 hover:text-green-600 transition-colors"
-                    title="Download file"
-                  >
+                href={file.url}
+                download={file.name}
+                className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                title="Download file">
+
                     <SafeIcon icon={FiDownload} />
                   </a>
                   <button
-                    onClick={() => removeFile(index)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                    title="Remove file"
-                  >
+                onClick={() => removeFile(index)}
+                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                title="Remove file">
+
                     <SafeIcon icon={FiTrash2} />
                   </button>
                 </div>
               </motion.div>
-            ))}
+          )}
           </div>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default FileUpload;

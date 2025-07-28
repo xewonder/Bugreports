@@ -32,8 +32,10 @@ const EnhancedTextarea = forwardRef(({
   const handleChange = (e) => {
     console.log("📝 EnhancedTextarea onChange:", e.target.value);
     onChange(e);
-    // Call mention handler immediately
-    handleMentionInput(e, textAreaRef);
+    // Call mention handler after state update
+    setTimeout(() => {
+      handleMentionInput(e, textAreaRef);
+    }, 0);
   };
 
   const handleKeyDown = (e) => {
@@ -87,8 +89,7 @@ const EnhancedTextarea = forwardRef(({
         maxRows={maxRows}
         disabled={disabled}
         className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${className}`}
-        {...props}
-      />
+        {...props} />
     </div>
   );
 });

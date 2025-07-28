@@ -17,13 +17,13 @@ import { useMention } from '../contexts/MentionContext';
  */
 const CommentDisplay = ({ comment, canDelete = false, canEdit = false, onDelete, onEdit }) => {
   const { renderWithMentions } = useMention();
-  
+
   const getRoleColor = (role) => {
     switch (role) {
-      case 'admin': return 'text-red-600';
-      case 'developer': return 'text-blue-600';
-      case 'user': return 'text-green-600';
-      default: return 'text-gray-600';
+      case 'admin':return 'text-red-600';
+      case 'developer':return 'text-blue-600';
+      case 'user':return 'text-green-600';
+      default:return 'text-gray-600';
     }
   };
 
@@ -60,38 +60,38 @@ const CommentDisplay = ({ comment, canDelete = false, canEdit = false, onDelete,
               {comment.updated_at && comment.updated_at !== comment.created_at && ' (edited)'}
             </span>
           </div>
-          {(canDelete || canEdit) && (
-            <div className="flex space-x-2">
-              {canEdit && (
-                <button
-                  onClick={() => onEdit(comment)}
-                  className="text-gray-400 hover:text-blue-600"
-                >
+          {(canDelete || canEdit) &&
+          <div className="flex space-x-2">
+              {canEdit &&
+            <button
+              onClick={() => onEdit(comment)}
+              className="text-gray-400 hover:text-blue-600">
+
                   <SafeIcon icon={FiEdit3} className="text-sm" />
                 </button>
-              )}
-              {canDelete && (
-                <button
-                  onClick={() => onDelete(comment)}
-                  className="text-gray-400 hover:text-red-600"
-                >
+            }
+              {canDelete &&
+            <button
+              onClick={() => onDelete(comment)}
+              className="text-gray-400 hover:text-red-600">
+
                   <SafeIcon icon={FiTrash2} className="text-sm" />
                 </button>
-              )}
+            }
             </div>
-          )}
+          }
         </div>
         <div className="text-sm text-gray-700 whitespace-pre-wrap">
           {renderWithMentions(comment.text)}
         </div>
-        {comment.attachments && comment.attachments.length > 0 && (
-          <div className="mt-3">
+        {comment.attachments && comment.attachments.length > 0 &&
+        <div className="mt-3">
             <AttachmentViewer files={comment.attachments} compact />
           </div>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default CommentDisplay;

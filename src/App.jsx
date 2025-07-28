@@ -1,45 +1,45 @@
-import React,{useState,useEffect} from 'react'
-import {HashRouter as Router,Routes,Route,Navigate} from 'react-router-dom'
-import {motion} from 'framer-motion'
-import {AuthProvider,useAuth} from './contexts/AuthContext'
-import {MentionProvider} from './contexts/MentionContext'
-import {QuestProvider} from '@questlabs/react-sdk'
-import '@questlabs/react-sdk/dist/style.css'
-import Sidebar from './components/Sidebar'
-import Dashboard from './components/Dashboard'
-import BugList from './components/BugList'
-import BugDetails from './components/BugDetails'
-import CreateBug from './components/CreateBug'
-import Roadmap from './components/Roadmap'
-import AdminPanel from './components/AdminPanel'
-import Settings from './components/Settings'
-import Login from './components/Login'
-import ProtectedRoute from './components/ProtectedRoute'
-import FeatureRequests from './components/FeatureRequests'
-import PowerPrompts from './components/PowerPrompts'
-import TipsAndTricks from './components/TipsAndTricks'
-import GeneralTalk from './components/GeneralTalk'
-import GeneralTalkDebug from './components/GeneralTalkDebug'
-import TestMentions from './components/TestMentions'
-import HelpCenter from './components/HelpCenter'
-import AppHelp from './components/AppHelp'
-import UserNotificationsService from './components/UserNotificationsService'
-import questConfig from './config/questConfig'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { MentionProvider } from './contexts/MentionContext';
+import { QuestProvider } from '@questlabs/react-sdk';
+import '@questlabs/react-sdk/dist/style.css';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import BugList from './components/BugList';
+import BugDetails from './components/BugDetails';
+import CreateBug from './components/CreateBug';
+import Roadmap from './components/Roadmap';
+import AdminPanel from './components/AdminPanel';
+import Settings from './components/Settings';
+import Login from './components/Login';
+import ProtectedRoute from './components/ProtectedRoute';
+import FeatureRequests from './components/FeatureRequests';
+import PowerPrompts from './components/PowerPrompts';
+import TipsAndTricks from './components/TipsAndTricks';
+import GeneralTalk from './components/GeneralTalk';
+import GeneralTalkDebug from './components/GeneralTalkDebug';
+import TestMentions from './components/TestMentions';
+import HelpCenter from './components/HelpCenter';
+import AppHelp from './components/AppHelp';
+import UserNotificationsService from './components/UserNotificationsService';
+import questConfig from './config/questConfig';
+import './App.css';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
-    super(props)
-    this.state={hasError: false,error: null}
+    super(props);
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
-    return {hasError: true,error}
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error,errorInfo) {
-    console.error('Error caught by boundary:',error,errorInfo)
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {
@@ -49,29 +49,29 @@ class ErrorBoundary extends React.Component {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
             <p className="text-gray-600 mb-4">Please refresh the page to try again</p>
-            <button onClick={()=> window.location.reload()} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" >
+            <button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               Refresh Page
             </button>
           </div>
-        </div>
-      )
+        </div>);
+
     }
-    return this.props.children
+    return this.props.children;
   }
 }
 
-const AuthenticatedLayout=({children})=> {
-  const [sidebarOpen,setSidebarOpen]=useState(true)
-  const {userProfile}=useAuth()
-  
+const AuthenticatedLayout = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { userProfile } = useAuth();
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar isOpen={sidebarOpen} onToggle={()=> setSidebarOpen(!sidebarOpen)} />
+      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       <motion.div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}
-        initial={{opacity: 0}}
-        animate={{opacity: 1}}
-        transition={{duration: 0.3}}
-      >
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}>
+
         {children}
         {/* Help Hub - Always visible on authenticated pages */}
         <AppHelp />
@@ -79,26 +79,26 @@ const AuthenticatedLayout=({children})=> {
         {/* Email notification service - runs in the background */}
         <UserNotificationsService />
       </motion.div>
-    </div>
-  )
-}
+    </div>);
+
+};
 
 function App() {
-  const [isOnline,setIsOnline]=useState(navigator.onLine)
-  
-  useEffect(()=> {
-    const handleOnline=()=> setIsOnline(true)
-    const handleOffline=()=> setIsOnline(false)
-    
-    window.addEventListener('online',handleOnline)
-    window.addEventListener('offline',handleOffline)
-    
-    return ()=> {
-      window.removeEventListener('online',handleOnline)
-      window.removeEventListener('offline',handleOffline)
-    }
-  },[])
-  
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   if (!isOnline) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -106,13 +106,13 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-900 mb-4">No Internet Connection</h1>
           <p className="text-gray-600">Please check your internet connection and try again</p>
         </div>
-      </div>
-    )
+      </div>);
+
   }
 
   return (
     <ErrorBoundary>
-      <QuestProvider apiKey={questConfig.APIKEY} entityId={questConfig.ENTITYID} apiType="PRODUCTION" >
+      <QuestProvider apiKey={questConfig.APIKEY} entityId={questConfig.ENTITYID} apiType="PRODUCTION">
         <AuthProvider>
           <MentionProvider>
             <Router>
@@ -195,8 +195,8 @@ function App() {
           </MentionProvider>
         </AuthProvider>
       </QuestProvider>
-    </ErrorBoundary>
-  )
+    </ErrorBoundary>);
+
 }
 
-export default App
+export default App;

@@ -19,9 +19,9 @@ serve(async (req) => {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
         },
-        status: 204,
+        status: 204
       });
     }
 
@@ -29,7 +29,7 @@ serve(async (req) => {
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         headers: { 'Content-Type': 'application/json' },
-        status: 405,
+        status: 405
       });
     }
 
@@ -42,7 +42,7 @@ serve(async (req) => {
         JSON.stringify({ error: 'Missing required fields: to, subject, html' }),
         {
           headers: { 'Content-Type': 'application/json' },
-          status: 400,
+          status: 400
         }
       );
     }
@@ -53,7 +53,7 @@ serve(async (req) => {
       hostname: SMTP_CONFIG.host,
       port: SMTP_CONFIG.port,
       username: SMTP_CONFIG.username,
-      password: SMTP_CONFIG.password,
+      password: SMTP_CONFIG.password
     });
 
     // Send email
@@ -62,7 +62,7 @@ serve(async (req) => {
       to: to,
       subject: subject,
       content: html,
-      html: html,
+      html: html
     });
 
     // Close connection
@@ -74,9 +74,9 @@ serve(async (req) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': '*'
         },
-        status: 200,
+        status: 200
       }
     );
   } catch (error) {
@@ -87,9 +87,9 @@ serve(async (req) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': '*'
         },
-        status: 500,
+        status: 500
       }
     );
   }

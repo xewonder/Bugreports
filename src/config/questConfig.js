@@ -6,7 +6,7 @@ export default {
   TOKEN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTNmNWI3ZjRjLTQxOGUtNGQyNy05YTlkLTczMzUzOGJhZjU3NyIsImlhdCI6MTc1MzI3NzE1OCwiZXhwIjoxNzU1ODY5MTU4fQ.kAHkwUQWQK6_u_CLbm1mqzkD9ncT94CYBPMTJ_dYVzs',
   ENTITYID: 'e-8446685f-fd1c-4131-bda3-54010e66b321',
   PRIMARY_COLOR: '#3b82f6', // Extracted blue-600 theme from the app
-  
+
   // Help Hub specific configurations
   HELP_CONFIG: {
     position: 'bottom-right',
@@ -18,11 +18,11 @@ export default {
     welcomeMessage: 'Welcome to MGG™ Help! How can I assist you today?',
     placeholder: 'Ask me anything about MGG™...',
     categories: [
-      'Getting Started',
-      'Bug Reporting', 
-      'Feature Requests',
-      'Account Management',
-      'Technical Support'
-    ]
+    'Getting Started',
+    'Bug Reporting',
+    'Feature Requests',
+    'Account Management',
+    'Technical Support']
+
   }
 };

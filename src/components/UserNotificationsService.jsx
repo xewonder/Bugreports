@@ -13,11 +13,11 @@ const UserNotificationsService = () => {
   const sendEmailNotification = async (mention) => {
     try {
       // Get information about the mentioned user
-      const { data: mentionedUser, error: userError } = await supabase
-        .from('profiles_mgg_2024')
-        .select('email, full_name, nickname')
-        .eq('id', mention.mentioned_user_id)
-        .single();
+      const { data: mentionedUser, error: userError } = await supabase.
+      from('profiles_mgg_2024').
+      select('email, full_name, nickname').
+      eq('id', mention.mentioned_user_id).
+      single();
 
       if (userError || !mentionedUser) {
         console.error('Error fetching mentioned user:', userError);
@@ -25,11 +25,11 @@ const UserNotificationsService = () => {
       }
 
       // Get information about the user who mentioned
-      const { data: mentionerUser, error: mentionerError } = await supabase
-        .from('profiles_mgg_2024')
-        .select('full_name, nickname')
-        .eq('id', mention.mentioned_by_id)
-        .single();
+      const { data: mentionerUser, error: mentionerError } = await supabase.
+      from('profiles_mgg_2024').
+      select('full_name, nickname').
+      eq('id', mention.mentioned_by_id).
+      single();
 
       if (mentionerError || !mentionerUser) {
         console.error('Error fetching mentioner user:', mentionerError);
@@ -49,7 +49,7 @@ const UserNotificationsService = () => {
         general_topic: { table: 'general_topics_mgg2024', nameField: 'title' },
         general_topic_comment: { table: 'general_topics_mgg2024', nameField: 'title', isComment: true },
         tip: { table: 'tips_and_tricks_mgg2024', nameField: 'title' },
-        tip_comment: { table: 'tips_and_tricks_mgg2024', nameField: 'title', isComment: true },
+        tip_comment: { table: 'tips_and_tricks_mgg2024', nameField: 'title', isComment: true }
       };
 
       // Skip if content type not recognized
@@ -60,11 +60,11 @@ const UserNotificationsService = () => {
       }
 
       // Get the content title
-      const { data: contentData, error: contentError } = await supabase
-        .from(contentTypeInfo.table)
-        .select(contentTypeInfo.nameField)
-        .eq('id', contentTypeInfo.isComment ? mention.content_id.split('_')[0] : mention.content_id)
-        .single();
+      const { data: contentData, error: contentError } = await supabase.
+      from(contentTypeInfo.table).
+      select(contentTypeInfo.nameField).
+      eq('id', contentTypeInfo.isComment ? mention.content_id.split('_')[0] : mention.content_id).
+      single();
 
       if (contentError) {
         console.error('Error fetching content details:', contentError);
@@ -74,13 +74,13 @@ const UserNotificationsService = () => {
       // Construct email content
       const mentionerName = mentionerUser.nickname || mentionerUser.full_name || 'Someone';
       const contentName = contentData ? contentData[contentTypeInfo.nameField] : 'a post';
-      const contentTypeName = mention.content_type.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-      
+      const contentTypeName = mention.content_type.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
       // Get the appropriate URL for the mention
       const getContentUrl = () => {
         const baseUrl = window.location.origin;
         const contentType = mention.content_type.split('_')[0];
-        
+
         switch (contentType) {
           case 'bug':
             return `${baseUrl}/#/bugs/${mention.content_id}`;
@@ -140,29 +140,29 @@ const UserNotificationsService = () => {
     if (!userProfile) return;
 
     // Set up real-time subscription for mentions
-    const subscription = supabase
-      .channel('user_mentions_emails')
-      .on('postgres_changes', 
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_mentions_mgg2024',
-        },
-        async (payload) => {
-          // Check if the user has email notifications enabled
-          const { data: userSettings } = await supabase
-            .from('profiles_mgg_2024')
-            .select('email, notifications')
-            .eq('id', payload.new.mentioned_user_id)
-            .single();
+    const subscription = supabase.
+    channel('user_mentions_emails').
+    on('postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'user_mentions_mgg2024'
+    },
+    async (payload) => {
+      // Check if the user has email notifications enabled
+      const { data: userSettings } = await supabase.
+      from('profiles_mgg_2024').
+      select('email, notifications').
+      eq('id', payload.new.mentioned_user_id).
+      single();
 
-          // If user has email notifications enabled, send the email
-          if (userSettings?.notifications?.email === true) {
-            await sendEmailNotification(payload.new);
-          }
-        }
-      )
-      .subscribe();
+      // If user has email notifications enabled, send the email
+      if (userSettings?.notifications?.email === true) {
+        await sendEmailNotification(payload.new);
+      }
+    }
+    ).
+    subscribe();
 
     // Clean up subscription
     return () => {

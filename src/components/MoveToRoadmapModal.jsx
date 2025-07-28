@@ -16,7 +16,7 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
     quarter: '',
     estimated_completion: '',
     assignee: '',
-    tags: feature?.tags ? feature.tags.join(',') : '',
+    tags: feature?.tags ? feature.tags.join(',') : ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,7 +32,7 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
     const quarters = [];
     let year = currentYear;
     let quarter = currentQuarter;
-    
+
     for (let i = 0; i < 8; i++) {
       quarters.push(`Q${quarter} ${year}`);
       quarter++;
@@ -41,14 +41,14 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
         year++;
       }
     }
-    
+
     // Add 'Future' option
     quarters.push('Future');
-    
+
     setAvailableQuarters(quarters);
-    
+
     // Set default quarter in form to current quarter
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       quarter: `Q${currentQuarter} ${currentYear}`
     }));
@@ -56,21 +56,21 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!form.title.trim() || !form.description.trim() || !form.quarter) {
       setError('Please fill in all required fields');
       return;
     }
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       // Prepare tags array
-      const tagsArray = form.tags
-        ? form.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-        : [];
-      
+      const tagsArray = form.tags ?
+      form.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0) :
+      [];
+
       // Create roadmap item
       const roadmapData = {
         title: form.title.trim(),
@@ -83,27 +83,27 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
         tags: tagsArray,
         attachments: feature.attachments || []
       };
-      
+
       // Insert into roadmap_items_mgg2024 table
-      const { data: roadmapItem, error: roadmapError } = await supabase
-        .from('roadmap_items_mgg2024')
-        .insert([roadmapData])
-        .select()
-        .single();
-        
+      const { data: roadmapItem, error: roadmapError } = await supabase.
+      from('roadmap_items_mgg2024').
+      insert([roadmapData]).
+      select().
+      single();
+
       if (roadmapError) throw roadmapError;
-      
+
       // Update feature status to 'planned'
-      const { error: featureError } = await supabase
-        .from('feature_requests_mgg2024')
-        .update({ 
-          status: 'planned',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', feature.id);
-        
+      const { error: featureError } = await supabase.
+      from('feature_requests_mgg2024').
+      update({
+        status: 'planned',
+        updated_at: new Date().toISOString()
+      }).
+      eq('id', feature.id);
+
       if (featureError) throw featureError;
-      
+
       // Call success callback with the created roadmap item
       onSuccess(roadmapItem);
     } catch (error) {
@@ -121,8 +121,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-        >
+          className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+
           <div className="flex items-center justify-between border-b border-gray-200 p-4">
             <div className="flex items-center space-x-2">
               <SafeIcon icon={FiMap} className="text-purple-600 text-xl" />
@@ -130,19 +130,19 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
-            >
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
+
               <SafeIcon icon={FiX} />
             </button>
           </div>
           
           <div className="p-6">
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center space-x-2">
+            {error &&
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg flex items-center space-x-2">
                 <SafeIcon icon={FiAlertCircle} className="flex-shrink-0" />
                 <span>{error}</span>
               </div>
-            )}
+            }
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -155,8 +155,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Roadmap item title"
-                  required
-                />
+                  required />
+
               </div>
               
               <div>
@@ -169,8 +169,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                   rows={5}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Detailed description of this roadmap item"
-                  required
-                />
+                  required />
+
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -182,8 +182,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  >
+                    required>
+
                     <option value="planning">Planning</option>
                     <option value="in-progress">In Progress</option>
                     <option value="completed">Completed</option>
@@ -199,8 +199,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                     value={form.priority}
                     onChange={(e) => setForm({ ...form, priority: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  >
+                    required>
+
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -215,13 +215,13 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                     value={form.quarter}
                     onChange={(e) => setForm({ ...form, quarter: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  >
-                    {availableQuarters.map((quarter) => (
-                      <option key={quarter} value={quarter}>
+                    required>
+
+                    {availableQuarters.map((quarter) =>
+                    <option key={quarter} value={quarter}>
                         {quarter}
                       </option>
-                    ))}
+                    )}
                   </select>
                 </div>
                 
@@ -237,8 +237,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                       type="date"
                       value={form.estimated_completion}
                       onChange={(e) => setForm({ ...form, estimated_completion: e.target.value })}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+
                   </div>
                 </div>
                 
@@ -249,8 +249,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                   <AssigneeAutocomplete
                     value={form.assignee}
                     onChange={(value) => setForm({ ...form, assignee: value })}
-                    placeholder="Person responsible"
-                  />
+                    placeholder="Person responsible" />
+
                 </div>
                 
                 <div>
@@ -262,8 +262,8 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                     value={form.tags}
                     onChange={(e) => setForm({ ...form, tags: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="UI,Performance,etc. (comma-separated)"
-                  />
+                    placeholder="UI,Performance,etc. (comma-separated)" />
+
                 </div>
               </div>
               
@@ -271,34 +271,34 @@ const MoveToRoadmapModal = ({ feature, onClose, onSuccess }) => {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center space-x-2"
-                >
-                  {loading ? (
-                    <>
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center space-x-2">
+
+                  {loading ?
+                  <>
                       <SafeIcon icon={FiLoader} className="animate-spin" />
                       <span>Processing...</span>
-                    </>
-                  ) : (
-                    <>
+                    </> :
+
+                  <>
                       <SafeIcon icon={FiCheckCircle} />
                       <span>Move to Roadmap</span>
                     </>
-                  )}
+                  }
                 </button>
               </div>
             </form>
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
-  );
+    </AnimatePresence>);
+
 };
 
 export default MoveToRoadmapModal;

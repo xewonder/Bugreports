@@ -5,7 +5,7 @@ import questConfig from '../config/questConfig';
 
 const AppHelp = () => {
   const { userProfile } = useAuth();
-  
+
   // Generate unique user ID from profile or use fallback
   const uniqueUserId = userProfile?.id || questConfig.USER_ID;
 
@@ -24,9 +24,9 @@ const AppHelp = () => {
       }}
       primaryColor={questConfig.PRIMARY_COLOR}
       welcomeMessage={questConfig.HELP_CONFIG.welcomeMessage}
-      placeholder={questConfig.HELP_CONFIG.placeholder}
-    />
-  );
+      placeholder={questConfig.HELP_CONFIG.placeholder} />);
+
+
 };
 
 export default AppHelp;
