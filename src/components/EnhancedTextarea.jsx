@@ -16,7 +16,7 @@ const EnhancedTextarea = forwardRef(({
   ...props
 }, ref) => {
   const textAreaRef = useRef(null);
-  const { handleMentionInput } = useMention();
+  const { handleMentionInput, insertMention } = useMention();
 
   // Combine refs (external ref and internal ref)
   useEffect(() => {
@@ -36,6 +36,19 @@ const EnhancedTextarea = forwardRef(({
     setTimeout(() => {
       handleMentionInput(e, textAreaRef);
     }, 0);
+  };
+
+  const handleMentionChange = (e) => {
+    console.log("🔄 Mention-triggered change event:", e.target.value);
+    // Force React to recognize the change
+    const syntheticEvent = {
+      ...e,
+      target: {
+        ...e.target,
+        value: e.target.value
+      }
+    };
+    onChange(syntheticEvent);
   };
 
   const handleKeyDown = (e) => {

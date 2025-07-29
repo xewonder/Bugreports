@@ -40,7 +40,10 @@ const MentionsTextarea = ({
         maxRows={maxRows}
         style={style}
         {...props} />
-      <MentionSuggestions textAreaRef={textAreaRef} />
+      <MentionSuggestions 
+        textAreaRef={textAreaRef} 
+        onValueChange={(value) => onChange({ target: { value } })}
+      />
     </div>);
 
 };

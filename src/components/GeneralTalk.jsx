@@ -735,7 +735,10 @@ const GeneralTalk = () => {
                   }
                   disabled={formSubmitting} />
 
-                  <MentionSuggestions textAreaRef={formContentRef} />
+                  <MentionSuggestions 
+                    textAreaRef={formContentRef} 
+                    onValueChange={(value) => setForm({ ...form, content: value })}
+                  />
                 </div>
                 {formErrors.content &&
               <p className="mt-1 text-sm text-red-600">{formErrors.content}</p>
@@ -979,7 +982,10 @@ const GeneralTalk = () => {
                       minRows={3}
                       disabled={commentLoading} />
 
-                          <MentionSuggestions textAreaRef={{ current: commentTextAreaRefs.current[topic.id] }} />
+                          <MentionSuggestions 
+                            textAreaRef={{ current: commentTextAreaRefs.current[topic.id] }} 
+                            onValueChange={(value) => setNewComment({ ...newComment, [topic.id]: value })}
+                          />
                         </div>
                         
                         <FileUpload

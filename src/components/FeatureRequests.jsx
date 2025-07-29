@@ -806,7 +806,10 @@ const FeatureRequests = () => {
                   }
                   disabled={formSubmitting} />
 
-                  <MentionSuggestions textAreaRef={formDescriptionRef} />
+                  <MentionSuggestions 
+                    textAreaRef={formDescriptionRef} 
+                    onValueChange={(value) => setForm({ ...form, description: value })}
+                  />
                 </div>
                 {formErrors.description &&
               <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
@@ -1152,7 +1155,10 @@ const FeatureRequests = () => {
                       minRows={3}
                       disabled={commentLoading} />
 
-                          <MentionSuggestions textAreaRef={{ current: commentTextAreaRefs.current[feature.id] }} />
+                          <MentionSuggestions 
+                            textAreaRef={{ current: commentTextAreaRefs.current[feature.id] }} 
+                            onValueChange={(value) => setNewComment({ ...newComment, [feature.id]: value })}
+                          />
                         </div>
 
                         <FileUpload

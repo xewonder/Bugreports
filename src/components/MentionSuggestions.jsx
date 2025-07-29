@@ -7,7 +7,7 @@ import { useMention } from '../contexts/MentionContext';
 /**
  * Component to display mention suggestions when typing @
  */
-const MentionSuggestions = ({ textAreaRef }) => {
+const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
   const {
     mentionSuggestions,
     showSuggestions,
@@ -37,7 +37,7 @@ const MentionSuggestions = ({ textAreaRef }) => {
         case 'Enter':
           e.preventDefault();
           if (mentionSuggestions[selectedIndex]) {
-            insertMention(mentionSuggestions[selectedIndex], textAreaRef);
+            insertMention(mentionSuggestions[selectedIndex], textAreaRef, onValueChange);
           }
           break;
         case 'Escape':
@@ -48,7 +48,7 @@ const MentionSuggestions = ({ textAreaRef }) => {
           if (showSuggestions && mentionSuggestions.length > 0) {
             e.preventDefault();
             if (mentionSuggestions[selectedIndex]) {
-              insertMention(mentionSuggestions[selectedIndex], textAreaRef);
+              insertMention(mentionSuggestions[selectedIndex], textAreaRef, onValueChange);
             }
           }
           break;
@@ -135,7 +135,7 @@ const MentionSuggestions = ({ textAreaRef }) => {
             }
             onClick={() => {
               console.log('🖱️ Clicked on user:', user);
-              insertMention(user, textAreaRef);
+              insertMention(user, textAreaRef, onValueChange);
             }}>
 
               <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">

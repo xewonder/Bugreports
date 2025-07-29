@@ -21,10 +21,10 @@ export function MentionProvider({ children }) {
       try {
         setLoading(true);
         console.log('🔄 Fetching users for mentions...');
-        
+
         // First, get the current user info to populate profiles if needed
         const { data: currentUser, error: userError } = await window.ezsite.apis.getUserInfo();
-        
+
         // Fetch profiles from the database
         const { data: profilesData, error: profilesError } = await window.ezsite.apis.tablePage(31708, {
           "PageNo": 1,
@@ -32,17 +32,17 @@ export function MentionProvider({ children }) {
           "OrderByField": "ID",
           "IsAsc": true,
           "Filters": [
-            {
-              "name": "is_active",
-              "op": "Equal",
-              "value": true
-            }
-          ]
+          {
+            "name": "is_active",
+            "op": "Equal",
+            "value": true
+          }]
+
         });
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError);
-          
+
           // If no profiles exist and we have a current user, create a profile
           if (currentUser && !userError) {
             console.log('📝 Creating profile for current user...');
@@ -53,7 +53,7 @@ export function MentionProvider({ children }) {
               "role": "user",
               "is_active": true
             });
-            
+
             // Set the current user as the only available user
             setUsers([{
               id: currentUser.ID || currentUser.id,
@@ -64,48 +64,48 @@ export function MentionProvider({ children }) {
           }
         } else {
           console.log('✅ Fetched users for mentions:', profilesData?.List?.length || 0, 'users');
-          
+
           // Transform the data to match expected format
-          const transformedUsers = (profilesData?.List || []).map(profile => ({
+          const transformedUsers = (profilesData?.List || []).map((profile) => ({
             id: profile.user_id,
             full_name: profile.full_name,
             nickname: profile.nickname,
             role: profile.role
           }));
-          
+
           // If no users exist, create sample users for testing
           if (transformedUsers.length === 0) {
             console.log('📝 No users found, creating sample users...');
             const sampleUsers = [
-              {
-                user_id: "user-1",
-                full_name: "John Doe", 
-                nickname: "john",
-                role: "admin",
-                is_active: true
-              },
-              {
-                user_id: "user-2",
-                full_name: "Jane Smith",
-                nickname: "jane", 
-                role: "developer",
-                is_active: true
-              },
-              {
-                user_id: "user-3",
-                full_name: "Bob Wilson",
-                nickname: "bob",
-                role: "user",
-                is_active: true
-              },
-              {
-                user_id: "user-4",
-                full_name: "Alice Johnson",
-                nickname: "alice",
-                role: "user", 
-                is_active: true
-              }
-            ];
+            {
+              user_id: "user-1",
+              full_name: "John Doe",
+              nickname: "john",
+              role: "admin",
+              is_active: true
+            },
+            {
+              user_id: "user-2",
+              full_name: "Jane Smith",
+              nickname: "jane",
+              role: "developer",
+              is_active: true
+            },
+            {
+              user_id: "user-3",
+              full_name: "Bob Wilson",
+              nickname: "bob",
+              role: "user",
+              is_active: true
+            },
+            {
+              user_id: "user-4",
+              full_name: "Alice Johnson",
+              nickname: "alice",
+              role: "user",
+              is_active: true
+            }];
+
 
             // Create sample users
             for (const user of sampleUsers) {
@@ -118,20 +118,20 @@ export function MentionProvider({ children }) {
             }
 
             // Set the sample users in state
-            setUsers(sampleUsers.map(user => ({
+            setUsers(sampleUsers.map((user) => ({
               id: user.user_id,
               full_name: user.full_name,
-              nickname: user.nickname, 
+              nickname: user.nickname,
               role: user.role
             })));
           } else {
             setUsers(transformedUsers);
           }
-          
+
           // If current user exists but not in profiles, add them
           if (currentUser && !userError) {
             const userId = currentUser.ID || currentUser.id;
-            const userExists = transformedUsers.some(user => user.id === userId);
+            const userExists = transformedUsers.some((user) => user.id === userId);
             if (!userExists) {
               console.log('📝 Adding current user to profiles...');
               await window.ezsite.apis.tableCreate(31708, {
@@ -141,7 +141,7 @@ export function MentionProvider({ children }) {
                 "role": "user",
                 "is_active": true
               });
-              
+
               // Add to the local state
               const newUser = {
                 id: userId,
@@ -149,7 +149,7 @@ export function MentionProvider({ children }) {
                 nickname: currentUser.Name || currentUser.Email.split('@')[0],
                 role: "user"
               };
-              setUsers(prev => [...prev, newUser]);
+              setUsers((prev) => [...prev, newUser]);
             }
           }
         }
@@ -159,7 +159,7 @@ export function MentionProvider({ children }) {
         setLoading(false);
       }
     };
-    
+
     fetchUsers();
   }, []);
 
@@ -261,7 +261,7 @@ export function MentionProvider({ children }) {
     setShowSuggestions(false);
   }, [searchUsers]);
 
-  const insertMention = useCallback((user, textAreaRef) => {
+  const insertMention = useCallback((user, textAreaRef, onValueChange = null) => {
     console.log("🎯 Inserting mention for user:", user);
     if (!textAreaRef || !textAreaRef.current) return;
 
@@ -292,19 +292,40 @@ export function MentionProvider({ children }) {
         newText
       });
 
-      // Update textarea value
+      // Update textarea value first
       textarea.value = newText;
 
       // Move cursor after the inserted mention
       const newCursorPosition = lastAtIndex + mentionText.length;
-      textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-
-      // Trigger change event to update React state
-      const inputEvent = new Event('input', { bubbles: true });
-      textarea.dispatchEvent(inputEvent);
-
-      // Focus back on textarea
-      textarea.focus();
+      
+      // If we have a callback to update React state, use it
+      if (onValueChange && typeof onValueChange === 'function') {
+        onValueChange(newText);
+        // Set cursor position after state update
+        setTimeout(() => {
+          textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+          textarea.focus();
+        }, 0);
+      } else {
+        // Fallback to event dispatching
+        textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+        
+        // Create and dispatch a proper change event
+        const event = new Event('input', { bubbles: true });
+        Object.defineProperty(event, 'target', {
+          value: textarea,
+          enumerable: true,
+          writable: false
+        });
+        Object.defineProperty(event, 'currentTarget', {
+          value: textarea,
+          enumerable: true,
+          writable: false
+        });
+        
+        textarea.dispatchEvent(event);
+        textarea.focus();
+      }
 
       // Hide suggestions
       setShowSuggestions(false);
@@ -426,6 +447,11 @@ export function MentionProvider({ children }) {
     return parts.length > 0 ? parts : text;
   };
 
+  // Create an enhanced insertMention that can accept a value change callback
+  const enhancedInsertMention = useCallback((user, textAreaRef, valueChangeCallback) => {
+    return insertMention(user, textAreaRef, valueChangeCallback);
+  }, [insertMention]);
+
   const value = {
     users,
     loading,
@@ -435,7 +461,7 @@ export function MentionProvider({ children }) {
     selectedIndex,
     setSelectedIndex,
     handleMentionInput,
-    insertMention,
+    insertMention: enhancedInsertMention,
     processMentions,
     renderWithMentions,
     setShowSuggestions,

@@ -118,7 +118,10 @@ const TestMentions = () => {
               onChange={(e) => setText(e.target.value)}
               placeholder="Type @ followed by a username to test mentions..."
               minRows={4} />
-            <MentionSuggestions textAreaRef={textAreaRef} />
+            <MentionSuggestions 
+              textAreaRef={textAreaRef} 
+              onValueChange={setText}
+            />
           </div>
           
           <button

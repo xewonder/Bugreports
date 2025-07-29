@@ -57,7 +57,10 @@ const CommentWithMentions = ({
           disabled={loading}
           className="mentions w-full" />
 
-        <MentionSuggestions textAreaRef={textAreaRef} />
+        <MentionSuggestions 
+          textAreaRef={textAreaRef} 
+          onValueChange={setCommentText}
+        />
       </div>
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
