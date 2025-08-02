@@ -24,9 +24,9 @@ const AppHelp = () => {
       }}
       primaryColor={questConfig.PRIMARY_COLOR}
       welcomeMessage={questConfig.HELP_CONFIG.welcomeMessage}
-      placeholder={questConfig.HELP_CONFIG.placeholder} />);
-
-
+      placeholder={questConfig.HELP_CONFIG.placeholder}
+    />
+  );
 };
 
 export default AppHelp;

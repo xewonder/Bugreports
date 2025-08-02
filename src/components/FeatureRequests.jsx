@@ -6,8 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import EnhancedTextarea from './EnhancedTextarea';
-import MentionSuggestions from './MentionSuggestions';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import MoveToRoadmapModal from './MoveToRoadmapModal';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -45,10 +44,6 @@ const FeatureRequests = () => {
   const [featureToMove, setFeatureToMove] = useState(null);
   const [userComments, setUserComments] = useState({}); // Track features where user commented
   const commentsEndRef = useRef(null);
-
-  // Add refs for textareas
-  const formDescriptionRef = useRef(null);
-  const commentTextAreaRefs = useRef({});
 
   useEffect(() => {
     fetchFeatures();
@@ -722,10 +717,11 @@ const FeatureRequests = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Feature Requests</h1>
             <p className="text-gray-600">Share and vote on new features for MGG™</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-md">
-
+          
+          {/* Added back a single Request Feature button */}
+          <button 
+            onClick={() => setShowForm(!showForm)} 
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg inline-flex items-center space-x-2 shadow-sm">
             <SafeIcon icon={FiPlus} />
             <span>Request Feature</span>
           </button>
@@ -792,8 +788,7 @@ const FeatureRequests = () => {
                   Description *
                 </label>
                 <div className="relative">
-                  <EnhancedTextarea
-                  ref={formDescriptionRef}
+                  <DisplayMentionsTextarea
                   value={form.description}
                   onChange={(e) => {
                     setForm({ ...form, description: e.target.value });
@@ -805,11 +800,6 @@ const FeatureRequests = () => {
                   formErrors.description ? 'border-red-300' : 'border-gray-300'} font-mono`
                   }
                   disabled={formSubmitting} />
-
-                  <MentionSuggestions 
-                    textAreaRef={formDescriptionRef} 
-                    onValueChange={(value) => setForm({ ...form, description: value })}
-                  />
                 </div>
                 {formErrors.description &&
               <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
@@ -1146,40 +1136,33 @@ const FeatureRequests = () => {
                     {/* Add Comment */}
                     {userProfile ?
                 <div className="space-y-3">
-                        <div className="relative">
-                          <EnhancedTextarea
-                      ref={(el) => commentTextAreaRefs.current[feature.id] = el}
-                      value={newComment[feature.id] || ''}
-                      onChange={(e) => setNewComment({ ...newComment, [feature.id]: e.target.value })}
-                      placeholder="Add a comment... (Type @ to mention users)"
-                      minRows={3}
-                      disabled={commentLoading} />
-
-                          <MentionSuggestions 
-                            textAreaRef={{ current: commentTextAreaRefs.current[feature.id] }} 
-                            onValueChange={(value) => setNewComment({ ...newComment, [feature.id]: value })}
-                          />
-                        </div>
+                        <DisplayMentionsTextarea
+                          value={newComment[feature.id] || ''}
+                          onChange={(e) => setNewComment({ ...newComment, [feature.id]: e.target.value })}
+                          placeholder="Add a comment... (Type @ to mention users)"
+                          minRows={3}
+                          disabled={commentLoading}
+                        />
 
                         <FileUpload
-                    onFilesUploaded={setCommentAttachments}
-                    existingFiles={commentAttachments}
-                    maxFiles={2}
-                    disabled={commentLoading}
-                    compact />
-
+                          onFilesUploaded={setCommentAttachments}
+                          existingFiles={commentAttachments}
+                          maxFiles={2}
+                          disabled={commentLoading}
+                          compact
+                        />
 
                         <div className="flex justify-end">
                           <button
-                      onClick={() => handleAddComment(feature.id)}
-                      disabled={!newComment[feature.id]?.trim() || commentLoading}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-400 disabled:to-indigo-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm">
-
-                            {commentLoading ?
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
-
-                      <SafeIcon icon={FiSend} />
-                      }
+                            onClick={() => handleAddComment(feature.id)}
+                            disabled={!newComment[feature.id]?.trim() || commentLoading}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-400 disabled:to-indigo-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm"
+                          >
+                            {commentLoading ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <SafeIcon icon={FiSend} />
+                            )}
                             <span>Submit</span>
                           </button>
                         </div>
@@ -1206,15 +1189,8 @@ const FeatureRequests = () => {
               <p className="text-gray-600 mb-6">
                 {searchTerm || statusFilter !== 'All' || priorityFilter !== 'All' || userFilter !== 'All' ?
               'Try adjusting your search or filters' :
-              'Be the first to suggest a new feature!'}
+              'There are no feature requests yet.'}
               </p>
-              <button
-              onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg inline-flex items-center space-x-2 shadow-sm">
-
-                <SafeIcon icon={FiPlus} />
-                <span>Request a Feature</span>
-              </button>
             </motion.div>
           }
         </div>

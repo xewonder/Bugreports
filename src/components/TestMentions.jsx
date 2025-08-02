@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import EnhancedTextarea from './EnhancedTextarea';
-import MentionSuggestions from './MentionSuggestions';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import { useMention } from '../contexts/MentionContext';
 import SafeIcon from '../common/SafeIcon';
 import { FiInfo, FiCheck, FiUsers, FiAlertCircle } from 'react-icons/fi';
@@ -13,7 +12,6 @@ const TestMentions = () => {
   const [text, setText] = useState('');
   const [result, setResult] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const textAreaRef = useRef(null);
   const {
     renderWithMentions,
     processMentions,
@@ -35,6 +33,12 @@ const TestMentions = () => {
     setTimeout(() => {
       setShowSuccess(false);
     }, 3000);
+  };
+
+  // Handle text changes
+  const handleTextChange = (e) => {
+    console.log("📝 TestMentions updating text to:", e.target.value);
+    setText(e.target.value);
   };
 
   return (
@@ -112,15 +116,13 @@ const TestMentions = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Type @ to mention users:
             </label>
-            <EnhancedTextarea
-              ref={textAreaRef}
+            {/* Use the DisplayMentionsTextarea component which combines both EnhancedTextarea and MentionSuggestions */}
+            <DisplayMentionsTextarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={handleTextChange}
               placeholder="Type @ followed by a username to test mentions..."
-              minRows={4} />
-            <MentionSuggestions 
-              textAreaRef={textAreaRef} 
-              onValueChange={setText}
+              minRows={4}
+              className="w-full"
             />
           </div>
           

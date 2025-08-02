@@ -6,9 +6,10 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import EnhancedTextarea from './EnhancedTextarea';
-import MentionSuggestions from './MentionSuggestions';
+import MentionsTextarea from './MentionsTextarea';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import AssigneeAutocomplete from './AssigneeAutocomplete';
+import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -39,7 +40,7 @@ const {
 
 const Roadmap = () => {
   const { userProfile, isAdmin, isTechnician } = useAuth();
-  const { processMentions } = useMention();
+  const { processMentions, renderWithMentions } = useMention();
   const [roadmapItems, setRoadmapItems] = useState([]);
   const [expandedItem, setExpandedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,10 +72,6 @@ const Roadmap = () => {
   const [votes, setVotes] = useState({});
   const commentsEndRef = useRef(null);
   const [availableQuarters, setAvailableQuarters] = useState([]);
-
-  // Add refs for textareas
-  const formDescriptionRef = useRef(null);
-  const commentTextAreaRefs = useRef({});
 
   useEffect(() => {
     fetchRoadmapItems();
@@ -591,18 +588,14 @@ const Roadmap = () => {
                   Description *
                 </label>
                 <div className="relative">
-                  <EnhancedTextarea
-                  ref={formDescriptionRef}
-                  value={form.description}
-                  onChange={(e) => handleFormChange('description', e.target.value)}
-                  minRows={4}
-                  className={`${
-                  formErrors.description ? 'border-red-300' : 'border-gray-300'} focus:ring-blue-500`
-                  }
-                  placeholder="Detailed description of this roadmap item (Type @ to mention users)"
-                  disabled={formSubmitting} />
-
-                  <MentionSuggestions textAreaRef={formDescriptionRef} />
+                  <DisplayMentionsTextarea
+                    value={form.description}
+                    onChange={(e) => handleFormChange('description', e.target.value)}
+                    minRows={4}
+                    placeholder="Detailed description of this roadmap item (Type @ to mention users)"
+                    className={`${formErrors.description ? 'border-red-300' : 'border-gray-300'} focus:ring-blue-500`}
+                    disabled={formSubmitting}
+                  />
                 </div>
                 {formErrors.description &&
               <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
@@ -876,7 +869,11 @@ const Roadmap = () => {
                           {item.quarter}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                      <CommentWithMentions 
+                        content={item.description} 
+                        className="text-gray-600 mb-3 line-clamp-2" 
+                        maxLength={150} 
+                      />
                       <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
                         <span>Created: {format(new Date(item.created_at), 'MMM dd, yyyy')}</span>
                         {item.assignee &&
@@ -954,7 +951,7 @@ const Roadmap = () => {
                 {expandedItem === item.id &&
             <div className="border-t border-gray-200 p-4 sm:p-6">
                     <div className="mb-4">
-                      <p className="text-gray-700 whitespace-pre-wrap">{item.description}</p>
+                      <CommentWithMentions content={item.description} className="text-gray-700 whitespace-pre-wrap" />
                     </div>
                     
                     {/* Attachments */}
@@ -1010,7 +1007,7 @@ const Roadmap = () => {
                       }
                               </div>
                               <div className="mt-2">
-                                <p className="text-gray-700 whitespace-pre-wrap">{comment.text}</p>
+                                <CommentWithMentions content={comment.text} className="text-gray-700 whitespace-pre-wrap" />
                               </div>
                               {/* Comment Attachments */}
                               {comment.attachments && comment.attachments.length > 0 &&
@@ -1031,46 +1028,38 @@ const Roadmap = () => {
                       {/* Add Comment */}
                       {userProfile ?
                 <div className="space-y-3">
-                          <div className="relative">
-                            <EnhancedTextarea
-                      ref={(el) => commentTextAreaRefs.current[item.id] = el}
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Add a comment... (Type @ to mention users)"
-                      minRows={3}
-                      disabled={commentLoading} />
-
-                            <MentionSuggestions
-                      textAreaRef={{ current: commentTextAreaRefs.current[item.id] }} />
-
-                          </div>
+                          <DisplayMentionsTextarea
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="Add a comment... (Type @ to mention users)"
+                            minRows={3}
+                            disabled={commentLoading}
+                          />
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <FileUpload
-                      onFilesUploaded={setCommentAttachments}
-                      existingFiles={commentAttachments}
-                      maxFiles={2}
-                      disabled={commentLoading}
-                      compact />
-
+                              onFilesUploaded={setCommentAttachments}
+                              existingFiles={commentAttachments}
+                              maxFiles={2}
+                              disabled={commentLoading}
+                              compact
+                            />
                             <button
-                      onClick={() => handleAddComment(item.id)}
-                      disabled={!commentText.trim() && commentAttachments.length === 0 || commentLoading}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors">
-
+                              onClick={() => handleAddComment(item.id)}
+                              disabled={!commentText.trim() && commentAttachments.length === 0 || commentLoading}
+                              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+                            >
                               {commentLoading ?
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
-
-                      <SafeIcon icon={FiSend} />
-                      }
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
+                                <SafeIcon icon={FiSend} />
+                              }
                               <span>Submit</span>
                             </button>
                           </div>
                         </div> :
-
-                <p className="text-center text-gray-500 py-2">
+                        <p className="text-center text-gray-500 py-2">
                           Please sign in to add comments.
                         </p>
-                }
+                      }
                     </div>
                   </div>
             }

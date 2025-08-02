@@ -6,8 +6,8 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import EnhancedTextarea from './EnhancedTextarea';
-import MentionSuggestions from './MentionSuggestions';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -37,10 +37,6 @@ const TipsAndTricks = () => {
   const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
   const [loadingComments, setLoadingComments] = useState({});
   const commentsEndRef = useRef(null);
-
-  // Add refs for textareas
-  const commentTextAreaRefs = useRef({});
-  const formTextAreaRef = useRef(null);
 
   useEffect(() => {
     fetchTips();
@@ -679,19 +675,19 @@ const TipsAndTricks = () => {
                   Content *
                 </label>
                 <div className="relative">
-                  <EnhancedTextarea
-                  ref={formTextAreaRef}
-                  value={form.content}
-                  onChange={(e) => {
-                    setForm({ ...form, content: e.target.value });
-                    if (formErrors.content) setFormErrors({ ...formErrors, content: '' });
-                  }}
-                  placeholder="Share your tip or trick in detail (Type @ to mention users)"
-                  minRows={8}
-                  className={`${formErrors.content ? 'border-red-300' : 'border-gray-300'} focus:ring-amber-500`}
-                  disabled={formSubmitting} />
-
-                  <MentionSuggestions textAreaRef={formTextAreaRef} />
+                  <DisplayMentionsTextarea
+                    value={form.content}
+                    onChange={(e) => {
+                      setForm({ ...form, content: e.target.value });
+                      if (formErrors.content) setFormErrors({ ...formErrors, content: '' });
+                    }}
+                    placeholder="Share your tip or trick in detail (Type @ to mention users)"
+                    minRows={8}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    formErrors.content ? 'border-red-300' : 'border-gray-300'}`}
+                    style={{ height: '210px !important' }}
+                    disabled={formSubmitting}
+                  />
                 </div>
                 {formErrors.content &&
               <p className="mt-1 text-sm text-red-600">{formErrors.content}</p>
@@ -754,6 +750,7 @@ const TipsAndTricks = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent" />
 
             </div>
+            
             <div>
               <select
                 value={sortBy}
@@ -764,6 +761,7 @@ const TipsAndTricks = () => {
                 <option value="votes">Most Voted</option>
               </select>
             </div>
+            
             <div className="flex items-center justify-center bg-gray-50 rounded-lg px-4 py-2">
               <span className="text-sm text-gray-600">
                 {filteredTips.length} of {tips.length} tips
@@ -805,11 +803,8 @@ const TipsAndTricks = () => {
                     {/* Tip Content Preview */}
                     <div className="bg-gray-50 p-4 rounded-lg text-sm whitespace-pre-wrap mb-4 border border-gray-200">
                       {tip.content.length > 200 ?
-                    <div>
-                          {renderWithMentions(tip.content.substring(0, 200))}...
-                        </div> :
-
-                    renderWithMentions(tip.content)
+                    <CommentWithMentions content={tip.content.substring(0, 200)} className="text-gray-700" maxLength={200} /> :
+                    <CommentWithMentions content={tip.content} className="text-gray-700" />
                     }
                     </div>
                     {/* Actions */}
@@ -924,37 +919,34 @@ const TipsAndTricks = () => {
                     {/* Add Comment */}
                     {userProfile ?
                 <div className="space-y-3">
-                        <div className="relative">
-                          <EnhancedTextarea
-                      ref={(el) => commentTextAreaRefs.current[tip.id] = el}
-                      value={newComment[tip.id] || ''}
-                      onChange={(e) => setNewComment({ ...newComment, [tip.id]: e.target.value })}
-                      placeholder="Add a comment... (Type @ to mention users)"
-                      minRows={3}
-                      disabled={commentLoading} />
-
-                          <MentionSuggestions
-                      textAreaRef={{ current: commentTextAreaRefs.current[tip.id] }} />
-
-                        </div>
+                        <DisplayMentionsTextarea
+                          value={newComment[tip.id] || ''}
+                          onChange={(e) => setNewComment({ ...newComment, [tip.id]: e.target.value })}
+                          placeholder="Add a comment... (Type @ to mention users)"
+                          minRows={3}
+                          className="w-full"
+                          disabled={commentLoading}
+                        />
+                        
                         <FileUpload
-                    onFilesUploaded={setCommentAttachments}
-                    existingFiles={commentAttachments}
-                    maxFiles={2}
-                    disabled={commentLoading}
-                    compact />
-
+                          onFilesUploaded={setCommentAttachments}
+                          existingFiles={commentAttachments}
+                          maxFiles={2}
+                          disabled={commentLoading}
+                          compact
+                        />
+                        
                         <div className="flex justify-end">
                           <button
-                      onClick={() => handleAddComment(tip.id)}
-                      disabled={!newComment[tip.id]?.trim() || commentLoading}
-                      className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 disabled:from-amber-400 disabled:to-amber-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm">
-
-                            {commentLoading ?
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
-
-                      <SafeIcon icon={FiSend} />
-                      }
+                            onClick={() => handleAddComment(tip.id)}
+                            disabled={!newComment[tip.id]?.trim() || commentLoading}
+                            className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 disabled:from-amber-400 disabled:to-amber-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm"
+                          >
+                            {commentLoading ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <SafeIcon icon={FiSend} />
+                            )}
                             <span>Submit</span>
                           </button>
                         </div>

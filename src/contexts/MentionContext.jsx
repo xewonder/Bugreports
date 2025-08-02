@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import UserMention from '../components/UserMention';
+import supabase from '../lib/supabase';
 
 const MentionContext = createContext();
 
@@ -13,148 +14,43 @@ export function MentionProvider({ children }) {
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [mentionsTableExists, setMentionsTableExists] = useState(true); // Always true for EasySite DB
+  const [mentionsTableExists, setMentionsTableExists] = useState(true);
+  const [currentMentionStartIndex, setCurrentMentionStartIndex] = useState(-1);
 
-  // Fetch all users for mention suggestions
+  // Fetch all users for mention suggestions from Supabase
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Fetching users for mentions...');
+        console.log('🔄 Fetching users for mentions from Supabase...');
 
-        // First, get the current user info to populate profiles if needed
-        const { data: currentUser, error: userError } = await window.ezsite.apis.getUserInfo();
-
-        // Fetch profiles from the database
-        const { data: profilesData, error: profilesError } = await window.ezsite.apis.tablePage(31708, {
-          "PageNo": 1,
-          "PageSize": 100,
-          "OrderByField": "ID",
-          "IsAsc": true,
-          "Filters": [
-          {
-            "name": "is_active",
-            "op": "Equal",
-            "value": true
-          }]
-
-        });
+        // Fetch all active users from profiles table
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles_mgg_2024')
+          .select('id, full_name, nickname, role, is_active')
+          .eq('is_active', true)
+          .order('full_name', { ascending: true });
 
         if (profilesError) {
           console.error('Error fetching profiles:', profilesError);
-
-          // If no profiles exist and we have a current user, create a profile
-          if (currentUser && !userError) {
-            console.log('📝 Creating profile for current user...');
-            await window.ezsite.apis.tableCreate(31708, {
-              "user_id": currentUser.ID || currentUser.id,
-              "full_name": currentUser.Name || currentUser.Email,
-              "nickname": currentUser.Name || currentUser.Email.split('@')[0],
-              "role": "user",
-              "is_active": true
-            });
-
-            // Set the current user as the only available user
-            setUsers([{
-              id: currentUser.ID || currentUser.id,
-              full_name: currentUser.Name || currentUser.Email,
-              nickname: currentUser.Name || currentUser.Email.split('@')[0],
-              role: "user"
-            }]);
-          }
-        } else {
-          console.log('✅ Fetched users for mentions:', profilesData?.List?.length || 0, 'users');
-
-          // Transform the data to match expected format
-          const transformedUsers = (profilesData?.List || []).map((profile) => ({
-            id: profile.user_id,
-            full_name: profile.full_name,
-            nickname: profile.nickname,
-            role: profile.role
-          }));
-
-          // If no users exist, create sample users for testing
-          if (transformedUsers.length === 0) {
-            console.log('📝 No users found, creating sample users...');
-            const sampleUsers = [
-            {
-              user_id: "user-1",
-              full_name: "John Doe",
-              nickname: "john",
-              role: "admin",
-              is_active: true
-            },
-            {
-              user_id: "user-2",
-              full_name: "Jane Smith",
-              nickname: "jane",
-              role: "developer",
-              is_active: true
-            },
-            {
-              user_id: "user-3",
-              full_name: "Bob Wilson",
-              nickname: "bob",
-              role: "user",
-              is_active: true
-            },
-            {
-              user_id: "user-4",
-              full_name: "Alice Johnson",
-              nickname: "alice",
-              role: "user",
-              is_active: true
-            }];
-
-
-            // Create sample users
-            for (const user of sampleUsers) {
-              try {
-                await window.ezsite.apis.tableCreate(31708, user);
-                console.log('✅ Created sample user:', user.nickname);
-              } catch (err) {
-                console.log('Sample user might exist:', user.nickname);
-              }
-            }
-
-            // Set the sample users in state
-            setUsers(sampleUsers.map((user) => ({
-              id: user.user_id,
-              full_name: user.full_name,
-              nickname: user.nickname,
-              role: user.role
-            })));
-          } else {
-            setUsers(transformedUsers);
-          }
-
-          // If current user exists but not in profiles, add them
-          if (currentUser && !userError) {
-            const userId = currentUser.ID || currentUser.id;
-            const userExists = transformedUsers.some((user) => user.id === userId);
-            if (!userExists) {
-              console.log('📝 Adding current user to profiles...');
-              await window.ezsite.apis.tableCreate(31708, {
-                "user_id": userId,
-                "full_name": currentUser.Name || currentUser.Email,
-                "nickname": currentUser.Name || currentUser.Email.split('@')[0],
-                "role": "user",
-                "is_active": true
-              });
-
-              // Add to the local state
-              const newUser = {
-                id: userId,
-                full_name: currentUser.Name || currentUser.Email,
-                nickname: currentUser.Name || currentUser.Email.split('@')[0],
-                role: "user"
-              };
-              setUsers((prev) => [...prev, newUser]);
-            }
-          }
+          setUsers([]);
+          return;
         }
+
+        console.log('✅ Fetched users for mentions:', profilesData?.length || 0, 'users');
+
+        // Transform the data to match expected format
+        const transformedUsers = (profilesData || []).map((profile) => ({
+          id: profile.id,
+          full_name: profile.full_name || 'Unknown User',
+          nickname: profile.nickname || profile.full_name || 'User',
+          role: profile.role || 'user'
+        }));
+
+        setUsers(transformedUsers);
       } catch (error) {
         console.error('Error fetching users for mentions:', error);
+        setUsers([]);
       } finally {
         setLoading(false);
       }
@@ -164,55 +60,52 @@ export function MentionProvider({ children }) {
   }, []);
 
   const searchUsers = useCallback((query) => {
-    console.log("🔍 Searching users with query:", query);
     if (!query || query.trim().length === 0) {
-      console.log("Empty query, clearing suggestions");
       setMentionSuggestions([]);
       return;
     }
 
     const lowerQuery = query.toLowerCase().trim();
-    const filtered = users.
-    filter((user) => {
-      // Don't suggest the current user
-      if (userProfile && user.id === (userProfile.ID || userProfile.id)) return false;
-      const nickname = user.nickname?.toLowerCase() || '';
-      const fullName = user.full_name?.toLowerCase() || '';
-      return nickname.includes(lowerQuery) || fullName.includes(lowerQuery);
-    }).
-    slice(0, 5); // Limit to 5 suggestions
+    const filtered = users
+      .filter((user) => {
+        // Don't suggest the current user
+        if (userProfile && user.id === userProfile.id) return false;
 
-    console.log("🎯 Found filtered users:", filtered);
+        const nickname = user.nickname?.toLowerCase() || '';
+        const fullName = user.full_name?.toLowerCase() || '';
+        return nickname.includes(lowerQuery) || fullName.includes(lowerQuery);
+      })
+      .slice(0, 5); // Limit to 5 suggestions
+
     setMentionSuggestions(filtered);
     setSelectedIndex(0);
   }, [users, userProfile]);
 
   const handleMentionInput = useCallback((e, textAreaRef) => {
     if (!textAreaRef || !textAreaRef.current) {
-      console.log("❌ No textarea ref available");
       return;
     }
 
     const textarea = textAreaRef.current;
     const text = textarea.value;
     const cursorPosition = textarea.selectionStart;
-    console.log("⌨️ Mention input handler called:", { text, cursorPosition, eventType: e.type, textLength: text.length });
 
     // Find the last @ symbol before cursor
     const lastAtIndex = text.lastIndexOf('@', cursorPosition - 1);
-    console.log("📍 Last @ index:", lastAtIndex);
 
     if (lastAtIndex >= 0 && lastAtIndex < cursorPosition) {
+      // Check if @ is at the beginning or has a space/newline before it
+      const isValidMentionStart = lastAtIndex === 0 || /[\s\n]/.test(text[lastAtIndex - 1]);
+      
       // Get text between @ and cursor
       const textBetween = text.substring(lastAtIndex, cursorPosition);
       const hasSpaceOrNewline = /[\s\n]/.test(textBetween.substring(1));
-      console.log("📝 Text between @ and cursor:", textBetween, "Has space/newline:", hasSpaceOrNewline);
 
-      // If there's no space/newline after @, it's a valid mention query
-      if (!hasSpaceOrNewline) {
+      // If it's a valid mention start and there's no space/newline after @
+      if (isValidMentionStart && !hasSpaceOrNewline) {
         const query = textBetween.substring(1); // Remove the @ symbol
-        console.log("✅ Valid mention query found:", query);
         setMentionQuery(query);
+        setCurrentMentionStartIndex(lastAtIndex);
         searchUsers(query);
 
         // Calculate position for dropdown with better accuracy
@@ -239,17 +132,6 @@ export function MentionProvider({ children }) {
           window.innerWidth - 280 // Ensure dropdown doesn't go off-screen
         );
 
-        console.log("📍 Setting mention position:", {
-          top,
-          left,
-          rect,
-          lineNumber,
-          charPositionInLine,
-          lineHeight,
-          fontSize,
-          charWidth
-        });
-
         setMentionPosition({ top, left });
         setShowSuggestions(true);
         return;
@@ -257,127 +139,24 @@ export function MentionProvider({ children }) {
     }
 
     // Hide suggestions if no @ or there's a space/newline
-    console.log("❌ Hiding suggestions - no valid @ found");
     setShowSuggestions(false);
   }, [searchUsers]);
-
-  const insertMention = useCallback((user, textAreaRef, onValueChange = null) => {
-    console.log("🎯 Inserting mention for user:", user);
-    if (!textAreaRef || !textAreaRef.current) return;
-
-    const textarea = textAreaRef.current;
-    const text = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-
-    // Find the last @ symbol before cursor
-    const lastAtIndex = text.lastIndexOf('@', cursorPosition - 1);
-
-    if (lastAtIndex >= 0) {
-      // Replace @query with @[username](userId)
-      const beforeMention = text.substring(0, lastAtIndex);
-      const afterMention = text.substring(cursorPosition);
-      const displayName = user.nickname || user.full_name;
-
-      // Use the format @[username](userId) for better parsing
-      const mentionText = `@[${displayName}](${user.id})`;
-      const newText = `${beforeMention}${mentionText}${afterMention}`;
-
-      console.log("✏️ Inserting mention:", {
-        displayName,
-        beforeMention,
-        afterMention,
-        lastAtIndex,
-        cursorPosition,
-        mentionText,
-        newText
-      });
-
-      // Update textarea value first
-      textarea.value = newText;
-
-      // Move cursor after the inserted mention
-      const newCursorPosition = lastAtIndex + mentionText.length;
-      
-      // If we have a callback to update React state, use it
-      if (onValueChange && typeof onValueChange === 'function') {
-        onValueChange(newText);
-        // Set cursor position after state update
-        setTimeout(() => {
-          textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-          textarea.focus();
-        }, 0);
-      } else {
-        // Fallback to event dispatching
-        textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-        
-        // Create and dispatch a proper change event
-        const event = new Event('input', { bubbles: true });
-        Object.defineProperty(event, 'target', {
-          value: textarea,
-          enumerable: true,
-          writable: false
-        });
-        Object.defineProperty(event, 'currentTarget', {
-          value: textarea,
-          enumerable: true,
-          writable: false
-        });
-        
-        textarea.dispatchEvent(event);
-        textarea.focus();
-      }
-
-      // Hide suggestions
-      setShowSuggestions(false);
-    }
-  }, []);
-
-  // Store mention data when a mention is made
-  const storeMention = async (mentionedUserId, contentType, contentId) => {
-    if (!userProfile || !mentionedUserId || (userProfile.ID || userProfile.id) === mentionedUserId) return;
-
-    try {
-      console.log("💾 Storing mention:", { mentionedUserId, contentType, contentId });
-
-      // Check if content ID is valid
-      if (!contentId) {
-        console.error('Invalid contentId for mention:', contentId);
-        return;
-      }
-
-      // Insert the mention
-      const { error } = await window.ezsite.apis.tableCreate(31709, {
-        "mentioned_user_id": mentionedUserId,
-        "mentioned_by_id": userProfile.ID || userProfile.id,
-        "content_type": contentType,
-        "content_id": contentId
-      });
-
-      if (error) {
-        console.error('Error storing mention:', error);
-      } else {
-        console.log('✅ Mention stored successfully');
-      }
-    } catch (error) {
-      console.error('Error storing mention:', error);
-    }
-  };
 
   // Extract mentions from text
   const extractMentions = (text) => {
     if (!text) return [];
+
+    console.log('🔍 Extracting mentions from text:', text);
 
     // Match @[username](userId) patterns
     const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
     const mentions = [];
     let match;
 
-    console.log("🔍 Extracting mentions from text:", text);
-
     while ((match = mentionRegex.exec(text)) !== null) {
       const username = match[1].trim();
       const userId = match[2];
-      console.log("👤 Found mention:", username, userId);
+
       mentions.push({
         userId: userId,
         username: username,
@@ -385,24 +164,90 @@ export function MentionProvider({ children }) {
       });
     }
 
+    console.log('🔍 Found mentions:', mentions);
     return mentions;
+  };
+
+  // Store mention data when a mention is made
+  const storeMention = async (mentionedUserId, contentType, contentId) => {
+    if (!userProfile || !mentionedUserId || userProfile.id === mentionedUserId) {
+      console.log('⏭️ Skipping mention storage:', {
+        hasUserProfile: !!userProfile,
+        mentionedUserId,
+        isSelf: userProfile?.id === mentionedUserId
+      });
+      return;
+    }
+
+    try {
+      console.log('💾 Storing mention:', {
+        mentionedUserId,
+        mentionedBy: userProfile.id,
+        contentType,
+        contentId
+      });
+
+      // Check if content ID is valid
+      if (!contentId) {
+        console.error('❌ Invalid contentId for mention:', contentId);
+        return;
+      }
+
+      // Insert the mention into Supabase
+      const { data, error } = await supabase
+        .from('user_mentions_mgg2024')
+        .insert({
+          mentioned_user_id: mentionedUserId,
+          mentioned_by_id: userProfile.id,
+          content_type: contentType,
+          content_id: contentId
+        })
+        .select();
+
+      if (error) {
+        console.error('❌ Error storing mention:', error);
+        throw error;
+      }
+
+      console.log('✅ Mention stored successfully:', data);
+    } catch (error) {
+      console.error('❌ Error storing mention:', error);
+    }
   };
 
   // Process mentions after content is submitted
   const processMentions = (text, contentType, contentId) => {
-    if (!text) return [];
+    console.log('🔄 Processing mentions:', {
+      text: text?.substring(0, 100) + (text?.length > 100 ? '...' : ''),
+      contentType,
+      contentId,
+      hasUserProfile: !!userProfile
+    });
 
-    console.log("⚙️ Processing mentions in text:", text);
-    console.log("📋 Content type:", contentType, "Content ID:", contentId);
+    if (!text) {
+      console.log('⏭️ No text provided for mention processing');
+      return [];
+    }
+
+    if (!userProfile) {
+      console.log('⏭️ No user profile available for mention processing');
+      return [];
+    }
 
     const mentions = extractMentions(text);
-    console.log("📝 Extracted mentions:", mentions);
+
+    if (mentions.length === 0) {
+      console.log('⏭️ No mentions found in text');
+      return [];
+    }
 
     // Store each mention
     mentions.forEach((mention) => {
+      console.log('📝 Processing mention:', mention);
       storeMention(mention.userId, contentType, contentId);
     });
 
+    console.log(`✅ Processed ${mentions.length} mentions`);
     return mentions;
   };
 
@@ -433,7 +278,8 @@ export function MentionProvider({ children }) {
         <UserMention
           key={`mention-${match.index}`}
           userId={userId}
-          username={username} />
+          username={username}
+        />
       );
 
       lastIndex = match.index + match[0].length;
@@ -447,11 +293,6 @@ export function MentionProvider({ children }) {
     return parts.length > 0 ? parts : text;
   };
 
-  // Create an enhanced insertMention that can accept a value change callback
-  const enhancedInsertMention = useCallback((user, textAreaRef, valueChangeCallback) => {
-    return insertMention(user, textAreaRef, valueChangeCallback);
-  }, [insertMention]);
-
   const value = {
     users,
     loading,
@@ -461,18 +302,19 @@ export function MentionProvider({ children }) {
     selectedIndex,
     setSelectedIndex,
     handleMentionInput,
-    insertMention: enhancedInsertMention,
     processMentions,
     renderWithMentions,
     setShowSuggestions,
-    mentionsTableExists
+    mentionsTableExists,
+    currentMentionStartIndex,
+    setCurrentMentionStartIndex
   };
 
   return (
     <MentionContext.Provider value={value}>
       {children}
-    </MentionContext.Provider>);
-
+    </MentionContext.Provider>
+  );
 }
 
 export function useMention() {

@@ -6,8 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import EnhancedTextarea from './EnhancedTextarea';
-import MentionSuggestions from './MentionSuggestions';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -52,10 +51,6 @@ const GeneralTalk = () => {
   const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
   const [loadingComments, setLoadingComments] = useState({});
   const commentsEndRef = useRef(null);
-
-  // Add refs for textareas
-  const formContentRef = useRef(null);
-  const commentTextAreaRefs = useRef({});
 
   useEffect(() => {
     fetchTopics();
@@ -720,9 +715,7 @@ const GeneralTalk = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Content *
                 </label>
-                <div className="relative">
-                  <EnhancedTextarea
-                  ref={formContentRef}
+                <DisplayMentionsTextarea
                   value={form.content}
                   onChange={(e) => {
                     setForm({ ...form, content: e.target.value });
@@ -734,12 +727,6 @@ const GeneralTalk = () => {
                   formErrors.content ? 'border-red-300' : 'border-gray-300'}`
                   }
                   disabled={formSubmitting} />
-
-                  <MentionSuggestions 
-                    textAreaRef={formContentRef} 
-                    onValueChange={(value) => setForm({ ...form, content: value })}
-                  />
-                </div>
                 {formErrors.content &&
               <p className="mt-1 text-sm text-red-600">{formErrors.content}</p>
               }
@@ -973,40 +960,33 @@ const GeneralTalk = () => {
                     {/* Add Comment */}
                     {userProfile ?
                 <div className="space-y-3">
-                        <div className="relative">
-                          <EnhancedTextarea
-                      ref={(el) => commentTextAreaRefs.current[topic.id] = el}
-                      value={newComment[topic.id] || ''}
-                      onChange={(e) => setNewComment({ ...newComment, [topic.id]: e.target.value })}
-                      placeholder="Add a comment... (Type @ to mention users)"
-                      minRows={3}
-                      disabled={commentLoading} />
-
-                          <MentionSuggestions 
-                            textAreaRef={{ current: commentTextAreaRefs.current[topic.id] }} 
-                            onValueChange={(value) => setNewComment({ ...newComment, [topic.id]: value })}
-                          />
-                        </div>
+                        <DisplayMentionsTextarea
+                          value={newComment[topic.id] || ''}
+                          onChange={(e) => setNewComment({ ...newComment, [topic.id]: e.target.value })}
+                          placeholder="Add a comment... (Type @ to mention users)"
+                          minRows={3}
+                          disabled={commentLoading}
+                        />
                         
                         <FileUpload
-                    onFilesUploaded={setCommentAttachments}
-                    existingFiles={commentAttachments}
-                    maxFiles={2}
-                    disabled={commentLoading}
-                    compact />
-
+                          onFilesUploaded={setCommentAttachments}
+                          existingFiles={commentAttachments}
+                          maxFiles={2}
+                          disabled={commentLoading}
+                          compact
+                        />
                         
                         <div className="flex justify-end">
                           <button
-                      onClick={() => handleAddComment(topic.id)}
-                      disabled={!newComment[topic.id]?.trim() || commentLoading}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-400 disabled:to-indigo-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm">
-
-                            {commentLoading ?
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> :
-
-                      <SafeIcon icon={FiSend} />
-                      }
+                            onClick={() => handleAddComment(topic.id)}
+                            disabled={!newComment[topic.id]?.trim() || commentLoading}
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-blue-400 disabled:to-indigo-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm"
+                          >
+                            {commentLoading ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              <SafeIcon icon={FiSend} />
+                            )}
                             <span>Submit</span>
                           </button>
                         </div>

@@ -137,61 +137,93 @@ body {
   z-index: 1;
 }
 
-/* CRITICAL: Mention suggestions dropdown with highest z-index */
-.mention-suggestions-dropdown {
+/* CRITICAL: Mention suggestions dropdown with ULTRA HIGH z-index */
+.mention-suggestions-dropdown,
+[data-mention-suggestions],
+div[style*="position: fixed"][style*="z-index"] {
   position: fixed !important;
   z-index: 999999 !important;
   background: white !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 0.5rem !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04) !important;
   max-height: 15rem !important;
   overflow-y: auto !important;
   width: 16rem !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-}
-
-/* Ensure mention dropdown is always visible */
-.mention-suggestions-dropdown * {
   pointer-events: auto !important;
 }
 
+/* Force all children to be clickable */
+.mention-suggestions-dropdown *,
+[data-mention-suggestions] * {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Ensure dropdown items are clickable */
+.mention-suggestions-dropdown li,
+[data-mention-suggestions] li {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+
 /* Override any conflicting styles */
-.form-container .mention-suggestions-dropdown {
-  z-index: 999999 !important;
+.form-container .mention-suggestions-dropdown,
+.relative .mention-suggestions-dropdown,
+.overflow-hidden .mention-suggestions-dropdown,
+.overflow-y-auto .mention-suggestions-dropdown {
   position: fixed !important;
+  z-index: 999999 !important;
 }
 
 /* Make sure no parent containers hide the dropdown */
-.overflow-hidden .mention-suggestions-dropdown,
-.overflow-y-auto .mention-suggestions-dropdown,
-.relative .mention-suggestions-dropdown {
-  position: fixed !important;
+div[style*="z-index: 99999"] {
   z-index: 999999 !important;
 }
 
-/* CRITICAL: Help Hub z-index - Must be higher than everything else */
+/* CRITICAL: Help Hub z-index - Must be higher than everything else including mentions */
 .quest-help-hub,
 .quest-help-hub *,
 [data-quest-help-hub],
-[data-quest-help-hub] * {
+[data-quest-help-hub] *,
+[class*="quest-"],
+[class*="Quest"] {
   z-index: 9999999 !important;
   position: relative !important;
 }
 
-/* Ensure Help Hub button is always clickable */
-.quest-help-hub-button {
+/* Ensure Help Hub button is always clickable and above all other elements */
+.quest-help-hub-button,
+[data-quest-help-hub-button],
+.quest-help-hub .quest-button,
+.quest-help-hub button {
   position: fixed !important;
   z-index: 9999999 !important;
   pointer-events: auto !important;
 }
 
-/* Help Hub modal/popup should be above everything */
+/* Help Hub modal/popup should be above everything including mentions */
 .quest-help-hub-modal,
 .quest-help-hub-popup,
-.quest-help-hub-chat {
+.quest-help-hub-chat,
+.quest-modal,
+.quest-popup,
+.quest-chat,
+[data-quest-modal],
+[data-quest-popup],
+[data-quest-chat] {
   position: fixed !important;
   z-index: 9999999 !important;
+}
+
+/* Ensure Help Hub content is always visible */
+.quest-help-hub .quest-content,
+.quest-help-hub .quest-body,
+.quest-help-hub .quest-wrapper {
+  z-index: 9999999 !important;
+  position: relative !important;
 }

@@ -6,8 +6,9 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import EnhancedTextarea from './EnhancedTextarea';
-import MentionSuggestions from './MentionSuggestions';
+import MentionsTextarea from './MentionsTextarea';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -766,31 +767,28 @@ const PowerPrompts = () => {
           </div>
           {editingComment && editingComment.id === comment.id ?
           <div className="mt-1 space-y-2">
-              <textarea
-              value={editingComment.text}
-              onChange={(e) => setEditingComment({ ...editingComment, text: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={2} />
-
+              <DisplayMentionsTextarea
+                value={editingComment.text}
+                onChange={(e) => setEditingComment({ ...editingComment, text: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                minRows={2}
+              />
               <div className="flex justify-end space-x-2">
                 <button
                 onClick={handleUpdateComment}
                 className="px-3 py-1 text-xs text-white bg-blue-600 rounded-md hover:bg-blue-700">
-
                   Save
                 </button>
                 <button
                 onClick={() => setEditingComment(null)}
                 className="px-3 py-1 text-xs text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
-
                   Cancel
                 </button>
               </div>
             </div> :
-
           <>
               <div className="text-sm text-gray-700">
-                {renderWithMentions(comment.text)}
+                <CommentWithMentions content={comment.text} />
               </div>
               {comment.attachments && comment.attachments.length > 0 &&
             <div className="mt-3">
@@ -801,7 +799,6 @@ const PowerPrompts = () => {
           }
         </div>
       </div>);
-
   };
 
   if (loading) {
@@ -813,7 +810,6 @@ const PowerPrompts = () => {
           <p className="text-gray-600">Loading power prompts...</p>
         </div>
       </div>);
-
   }
 
   return (
@@ -888,23 +884,20 @@ const PowerPrompts = () => {
                 placeholder="Enter a descriptive title for your prompt"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required />
-
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Prompt Text *
                 </label>
                 <div className="relative">
-                  <EnhancedTextarea
-                  ref={formDescriptionRef}
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Enter the prompt text that others can use (Type @ to mention users)"
-                  minRows={8}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
-                  required />
-
-                  <MentionSuggestions textAreaRef={formDescriptionRef} />
+                  <DisplayMentionsTextarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Enter the prompt text that others can use (Type @ to mention users)"
+                    minRows={8}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                    required
+                  />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Use markdown formatting for better readability. Include variables like {'{input}'} where users should customize.
@@ -962,7 +955,6 @@ const PowerPrompts = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-
           </div>
         </div>
 
@@ -990,7 +982,7 @@ const PowerPrompts = () => {
                       {prompt.updated_at !== prompt.created_at && ` (updated ${format(new Date(prompt.updated_at), 'MMM dd, yyyy')})`}
                     </p>
                     <div className="bg-gray-50 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap mb-4 border border-gray-200">
-                      {renderWithMentions(prompt.description)}
+                      <CommentWithMentions content={prompt.description} />
                     </div>
 
                     {/* Prompt Attachments */}
@@ -1122,29 +1114,24 @@ const PowerPrompts = () => {
                   {userProfile &&
               <div className="border-t border-gray-200 pt-4">
                       <div className="space-y-3">
-                        <div className="relative">
-                          <EnhancedTextarea
-                      ref={(el) => commentTextAreaRefs.current[prompt.id] = el}
-                      value={newComment[prompt.id] || ''}
-                      onChange={(e) => setNewComment({ ...newComment, [prompt.id]: e.target.value })}
-                      placeholder="Add a comment... (Type @ to mention users)"
-                      minRows={2} />
-
-                          <MentionSuggestions textAreaRef={{ current: commentTextAreaRefs.current[prompt.id] }} />
-                        </div>
+                        <DisplayMentionsTextarea
+                          value={newComment[prompt.id] || ''}
+                          onChange={(e) => setNewComment({ ...newComment, [prompt.id]: e.target.value })}
+                          placeholder="Add a comment... (Type @ to mention users)"
+                          minRows={2}
+                        />
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                           <FileUpload
-                      onFilesUploaded={setCommentAttachments}
-                      existingFiles={commentAttachments}
-                      maxFiles={2}
-                      disabled={false}
-                      compact />
-
+                            onFilesUploaded={setCommentAttachments}
+                            existingFiles={commentAttachments}
+                            maxFiles={2}
+                            disabled={false}
+                            compact
+                          />
                           <button
-                      onClick={() => handleAddComment(prompt.id)}
-                      disabled={!newComment[prompt.id]?.trim()}
-                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-1 transition-colors">
-
+                            onClick={() => handleAddComment(prompt.id)}
+                            disabled={!newComment[prompt.id]?.trim()}
+                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-1 transition-colors">
                             <SafeIcon icon={FiSend} className="text-sm" />
                             <span>Send</span>
                           </button>
@@ -1177,7 +1164,6 @@ const PowerPrompts = () => {
         </div>
       </div>
     </div>);
-
 };
 
 export default PowerPrompts;

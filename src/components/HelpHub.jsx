@@ -299,7 +299,7 @@ const HelpHub = () => {
                   
                   {/* Quick action buttons */}
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {['How to report a bug?', 'Request a feature', 'Use @mentions'].map((action) =>
+                    {['How to report a bug?', 'Use @mentions'].map((action) =>
                 <button
                   key={action}
                   onClick={() => handleQuickAction(action)}

@@ -14,10 +14,10 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
     mentionPosition,
     selectedIndex,
     setSelectedIndex,
-    insertMention,
-    setShowSuggestions
+    setShowSuggestions,
+    currentMentionStartIndex
   } = useMention();
-
+  
   const suggestionsRef = useRef(null);
 
   // Handle keyboard navigation
@@ -37,7 +37,7 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
         case 'Enter':
           e.preventDefault();
           if (mentionSuggestions[selectedIndex]) {
-            insertMention(mentionSuggestions[selectedIndex], textAreaRef, onValueChange);
+            handleUserSelection(mentionSuggestions[selectedIndex]);
           }
           break;
         case 'Escape':
@@ -48,7 +48,7 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
           if (showSuggestions && mentionSuggestions.length > 0) {
             e.preventDefault();
             if (mentionSuggestions[selectedIndex]) {
-              insertMention(mentionSuggestions[selectedIndex], textAreaRef, onValueChange);
+              handleUserSelection(mentionSuggestions[selectedIndex]);
             }
           }
           break;
@@ -64,17 +64,17 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showSuggestions, mentionSuggestions, selectedIndex, setSelectedIndex, insertMention, textAreaRef, setShowSuggestions]);
+  }, [showSuggestions, mentionSuggestions, selectedIndex, setSelectedIndex, setShowSuggestions]);
 
   // Handle outside click to close suggestions
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
-      suggestionsRef.current &&
-      !suggestionsRef.current.contains(e.target) &&
-      textAreaRef.current &&
-      !textAreaRef.current.contains(e.target))
-      {
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target) &&
+        textAreaRef.current &&
+        !textAreaRef.current.contains(e.target)
+      ) {
         setShowSuggestions(false);
       }
     };
@@ -85,24 +85,104 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
     };
   }, [setShowSuggestions, textAreaRef]);
 
-  // Debug logging
-  useEffect(() => {
-    if (showSuggestions) {
-      console.log('🔍 MentionSuggestions - Should show:', {
-        showSuggestions,
-        suggestionsCount: mentionSuggestions.length,
-        position: mentionPosition,
-        suggestions: mentionSuggestions
-      });
+  // Handle user selection (both click and keyboard)
+  const handleUserSelection = (user) => {
+    console.log('🎯 User selected:', user);
+    
+    if (!textAreaRef?.current) {
+      console.error('❌ No textarea reference available');
+      return;
     }
-  }, [showSuggestions, mentionSuggestions, mentionPosition]);
+
+    try {
+      console.log('🔧 insertMention called with:', {
+        user: user.nickname || user.full_name,
+        hasTextAreaRef: !!textAreaRef?.current,
+        hasOnValueChange: typeof onValueChange === 'function'
+      });
+
+      const textarea = textAreaRef.current;
+      const text = textarea.value;
+      const cursorPosition = textarea.selectionStart;
+
+      // Find the @ symbol that started this mention
+      const lastAtIndex = currentMentionStartIndex;
+      
+      if (lastAtIndex === -1) {
+        console.error("❌ No valid mention start position found");
+        return;
+      }
+
+      console.log('📝 Current text:', text);
+      console.log('📍 Cursor position:', cursorPosition);
+      console.log('🎯 Last @ index:', lastAtIndex);
+
+      // Replace @query with @[username](userId)
+      const beforeMention = text.substring(0, lastAtIndex);
+      const afterMention = text.substring(cursorPosition);
+      const displayName = user.nickname || user.full_name;
+      const mentionText = `@[${displayName}](${user.id})`;
+      const newText = `${beforeMention}${mentionText} ${afterMention}`;
+
+      console.log('🔄 New text:', newText);
+      
+      // Most important part: directly call the parent's onValueChange with the new text
+      if (onValueChange && typeof onValueChange === 'function') {
+        onValueChange(newText);
+      } else {
+        // Fallback to manually updating the textarea value
+        textarea.value = newText;
+        
+        // Create and dispatch an input event to trigger React's onChange
+        const inputEvent = new Event('input', { bubbles: true });
+        textarea.dispatchEvent(inputEvent);
+        
+        // Create a synthetic event for React's onChange
+        const syntheticEvent = {
+          target: { value: newText },
+          preventDefault: () => {},
+          stopPropagation: () => {}
+        };
+        
+        // Find onChange handler on the textarea element
+        if (textarea._valueTracker) {
+          textarea._valueTracker.setValue(''); // Force React to detect the change
+        }
+        
+        // Set cursor position after the inserted mention
+        const newCursorPosition = lastAtIndex + mentionText.length + 1;
+        setTimeout(() => {
+          textarea.selectionStart = newCursorPosition;
+          textarea.selectionEnd = newCursorPosition;
+          textarea.focus();
+        }, 0);
+      }
+      
+      // Hide suggestions
+      setShowSuggestions(false);
+      console.log('✅ Mention inserted successfully');
+    } catch (error) {
+      console.error('❌ Error inserting mention:', error);
+    }
+  };
+
+  // Handle mouse down to prevent blur
+  const handleMouseDown = (e, user) => {
+    console.log('🖱️ Mouse down on user:', user.nickname || user.full_name);
+    e.preventDefault(); // Prevent textarea from losing focus
+  };
+
+  // Handle click
+  const handleClick = (e, user) => {
+    console.log('🖱️ Click on user:', user.nickname || user.full_name);
+    e.preventDefault();
+    e.stopPropagation();
+    handleUserSelection(user);
+  };
 
   if (!showSuggestions || mentionSuggestions.length === 0) {
-    console.log('❌ Not showing suggestions:', { showSuggestions, count: mentionSuggestions.length });
     return null;
   }
-
-  console.log('✅ Rendering mention suggestions:', mentionSuggestions);
 
   return (
     <AnimatePresence>
@@ -112,32 +192,31 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
         exit={{ opacity: 0, y: -10 }}
         transition={{ duration: 0.15 }}
         ref={suggestionsRef}
-        className="fixed bg-white rounded-lg shadow-xl border border-gray-200 w-64 max-h-60 overflow-y-auto"
+        className="fixed bg-white rounded-lg shadow-xl border border-gray-200 w-64 max-h-60 overflow-y-auto z-[99999]"
         style={{
           top: `${mentionPosition.top}px`,
           left: `${mentionPosition.left}px`,
-          zIndex: 99999, // Very high z-index
           position: 'fixed',
-          display: 'block'
-        }}>
-
+          zIndex: 99999
+        }}
+      >
         <div className="p-2 bg-gray-50 border-b text-xs text-gray-600">
           Type to search users ({mentionSuggestions.length} found)
         </div>
         <ul className="py-1">
-          {mentionSuggestions.map((user, index) =>
-          <li
-            key={user.id}
-            className={`px-3 py-2 flex items-center space-x-2 cursor-pointer transition-colors ${
-            index === selectedIndex ?
-            'bg-blue-50 text-blue-700' :
-            'hover:bg-gray-50'}`
-            }
-            onClick={() => {
-              console.log('🖱️ Clicked on user:', user);
-              insertMention(user, textAreaRef, onValueChange);
-            }}>
-
+          {mentionSuggestions.map((user, index) => (
+            <li
+              key={user.id}
+              className={`px-3 py-2 flex items-center space-x-2 cursor-pointer transition-colors ${
+                index === selectedIndex
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'hover:bg-gray-50'
+              }`}
+              onMouseDown={(e) => handleMouseDown(e, user)}
+              onClick={(e) => handleClick(e, user)}
+              onMouseEnter={() => setSelectedIndex(index)}
+              style={{ pointerEvents: 'auto' }}
+            >
               <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <SafeIcon icon={FiUser} className="text-blue-600 text-xs" />
               </div>
@@ -150,11 +229,11 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
                 </p>
               </div>
             </li>
-          )}
+          ))}
         </ul>
       </motion.div>
-    </AnimatePresence>);
-
+    </AnimatePresence>
+  );
 };
 
 export default MentionSuggestions;

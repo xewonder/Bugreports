@@ -1,28 +1,28 @@
 // Configuration for Quest Help Hub
 export default {
   QUEST_HELP_QUESTID: 'c-greta-help-hub',
-  USER_ID: 'u-3f5b7f4c-418e-4d27-9a9d-733538baf577',
-  APIKEY: 'k-ed5922c8-d963-43b0-b128-9573fca7df4f',
-  TOKEN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTNmNWI3ZjRjLTQxOGUtNGQyNy05YTlkLTczMzUzOGJhZjU3NyIsImlhdCI6MTc1MzI3NzE1OCwiZXhwIjoxNzU1ODY5MTU4fQ.kAHkwUQWQK6_u_CLbm1mqzkD9ncT94CYBPMTJ_dYVzs',
-  ENTITYID: 'e-8446685f-fd1c-4131-bda3-54010e66b321',
-  PRIMARY_COLOR: '#3b82f6', // Extracted blue-600 theme from the app
+  USER_ID: 'u-4a099828-8efd-4712-a4ef-81f02acc473c',
+  APIKEY: 'k-d416516b-2413-4786-bc12-7426c5a74b4c',
+  TOKEN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTRhMDk5ODI4LThlZmQtNDcxMi1hNGVmLTgxZjAyYWNjNDczYyIsImlhdCI6MTc1NDA0NzExNCwiZXhwIjoxNzU2NjM5MTE0fQ.Am_8dikWWZ-qkxVAgAqnhxdoBriyGFlYphIYsh58oSg',
+  ENTITYID: 'e-33936698-671f-4e73-bd60-783fff72cc9e',
+  PRIMARY_COLOR: '#3b82f6', // Extracted blue-600 theme from your app
 
   // Help Hub specific configurations
   HELP_CONFIG: {
     position: 'bottom-right',
     offset: {
-      bottom: 20,
-      right: 20
+      bottom: 24,
+      right: 24
     },
     triggerText: 'Need Help?',
     welcomeMessage: 'Welcome to MGG™ Help! How can I assist you today?',
     placeholder: 'Ask me anything about MGG™...',
     categories: [
-    'Getting Started',
-    'Bug Reporting',
-    'Feature Requests',
-    'Account Management',
-    'Technical Support']
-
+      'Getting Started',
+      'Bug Reporting', 
+      'Feature Requests',
+      'Account Management',
+      'Technical Support'
+    ]
   }
 };

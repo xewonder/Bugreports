@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useMention } from '../contexts/MentionContext';
 import SafeIcon from '../common/SafeIcon';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
 import AssigneeAutocomplete from './AssigneeAutocomplete';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import * as FiIcons from 'react-icons/fi';
 import supabase from '../lib/supabase';
 
@@ -14,6 +16,7 @@ const { FiArrowLeft, FiSave, FiX, FiCheckCircle, FiAlertCircle, FiPaperclip } = 
 const CreateBug = () => {
   const navigate = useNavigate();
   const { userProfile, isTechnician } = useAuth();
+  const { processMentions } = useMention();
 
   const [form, setForm] = useState({
     title: '',
@@ -70,6 +73,7 @@ const CreateBug = () => {
         status: form.status,
         assignee: form.assignee || null,
         reporter_id: userProfile.id,
+        reporter_name: userProfile.full_name || userProfile.nickname || 'Anonymous', // Add reporter_name
         tags: tagsArray,
         attachments: attachments
       };
@@ -80,6 +84,11 @@ const CreateBug = () => {
       select();
 
       if (error) throw error;
+
+      // Process mentions in the description
+      if (data && data[0] && form.description.trim()) {
+        processMentions(form.description.trim(), 'bug', data[0].id);
+      }
 
       setStatusMessage({
         type: 'success',
@@ -183,16 +192,16 @@ const CreateBug = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description *
                 </label>
-                <textarea
+                <DisplayMentionsTextarea
                   value={form.description}
                   onChange={(e) => handleChange('description', e.target.value)}
-                  placeholder="Detailed description of the bug, steps to reproduce, expected behavior, etc."
-                  rows={8}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  placeholder="Detailed description of the bug, steps to reproduce, expected behavior, etc. (Type @ to mention users)"
+                  minRows={8}
+                  className={`w-full focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   errors.description ? 'border-red-300' : 'border-gray-300'}`
                   }
-                  disabled={loading} />
-
+                  disabled={loading}
+                />
                 {errors.description &&
                 <p className="mt-1 text-sm text-red-600">{errors.description}</p>
                 }

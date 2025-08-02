@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useMention } from '../contexts/MentionContext';
 import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
+import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -12,6 +14,7 @@ const { FiSearch, FiFilter, FiPlus, FiEdit3, FiTrash2, FiEye, FiThumbsUp, FiLoad
 
 const BugList = () => {
   const { userProfile } = useAuth();
+  const { renderWithMentions } = useMention();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [severityFilter, setSeverityFilter] = useState('All');
@@ -385,7 +388,12 @@ const BugList = () => {
                       </span>
                   }
                   </div>
-                  <p className="text-gray-600 mb-3 line-clamp-2">{bug.description}</p>
+                  {/* Use CommentWithMentions instead of plain text */}
+                  <CommentWithMentions 
+                    content={bug.description} 
+                    className="text-gray-600 mb-3 line-clamp-2" 
+                    maxLength={150}
+                  />
                   <div className="flex items-center space-x-4 text-sm text-gray-500">
                     <span>Assignee: {bug.assignee || 'Unassigned'}</span>
                     <span>Reporter: {getDisplayName(bug)}</span>

@@ -27,25 +27,43 @@ const MentionsTextarea = ({
 }) => {
   const textAreaRef = useRef(null);
 
+  // Handle direct changes from the textarea
+  const handleChange = (e) => {
+    onChange(e);
+  };
+
+  // Handle changes from the mention suggestions
+  const handleMentionValueChange = (newValue) => {
+    // Create a synthetic event to mimic a standard onChange event
+    const syntheticEvent = {
+      target: { value: newValue },
+      preventDefault: () => {},
+      stopPropagation: () => {}
+    };
+    
+    onChange(syntheticEvent);
+  };
+
   return (
     <div className="relative">
       <EnhancedTextarea
         ref={textAreaRef}
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         disabled={disabled}
         className={`mentions w-full ${className}`}
         minRows={minRows}
         maxRows={maxRows}
         style={style}
-        {...props} />
+        {...props} 
+      />
       <MentionSuggestions 
         textAreaRef={textAreaRef} 
-        onValueChange={(value) => onChange({ target: { value } })}
+        onValueChange={handleMentionValueChange}
       />
-    </div>);
-
+    </div>
+  );
 };
 
 export default MentionsTextarea;

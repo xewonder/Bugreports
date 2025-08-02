@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
 import { FiSend } from 'react-icons/fi';
-import MentionsTextarea from './MentionsTextarea';
+import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import FileUpload from './FileUpload';
 
 /**
@@ -34,7 +34,7 @@ const CommentForm = ({
 
   return (
     <div className="form-container space-y-3">
-      <MentionsTextarea
+      <DisplayMentionsTextarea
         value={commentText}
         onChange={(e) => setCommentText(e.target.value)}
         placeholder={placeholder}
