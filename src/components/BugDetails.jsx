@@ -9,6 +9,7 @@ import AttachmentViewer from './AttachmentViewer';
 import FileUpload from './FileUpload';
 import CommentWithMentions from './CommentWithMentions';
 import CommentDisplay from './CommentDisplay';
+import CommentForm from './CommentForm';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -43,6 +44,7 @@ const BugDetails = () => {
     assignee: ''
   });
   const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
   const [commentAttachments, setCommentAttachments] = useState([]);
   const [commentLoading, setCommentLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
@@ -267,6 +269,11 @@ const BugDetails = () => {
     setCommentLoading(true);
 
     try {
+      // Process mentions before submitting
+      if (text.trim() && processMentions) {
+        processMentions(text.trim(), 'bug_comment', id);
+      }
+
       const commentData = {
         bug_id: id,
         text: text.trim(),
@@ -279,12 +286,12 @@ const BugDetails = () => {
         .insert([commentData])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting comment:', error);
+        throw error;
+      }
 
       console.log("✅ Comment inserted successfully:", data[0]);
-
-      // NOTE: Mentions are already processed in CommentWithMentions component
-      // before this function is called, so we don't need to process them again here
 
       // Get user data to enhance the comment
       const { data: userData, error: userError } = await supabase
@@ -304,6 +311,7 @@ const BugDetails = () => {
 
       setComments([...comments, newComment]);
       setCommentAttachments([]);
+      setCommentText('');
     } catch (error) {
       console.error('Error adding comment:', error);
       setStatusMessage({ type: 'error', message: 'Failed to add comment: ' + error.message });
@@ -628,13 +636,12 @@ const BugDetails = () => {
 
               {/* Add Comment Form */}
               {userProfile ? (
-                <CommentWithMentions
+                <CommentForm
                   onSubmit={handleAddComment}
                   loading={commentLoading}
                   attachments={commentAttachments}
                   setAttachments={setCommentAttachments}
-                  contentType="bug_comment"
-                  contentId={id}
+                  placeholder="Add a comment... (Type @ to mention users)"
                 />
               ) : (
                 <p className="text-center text-gray-500 py-2">
