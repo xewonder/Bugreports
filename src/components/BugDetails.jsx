@@ -278,6 +278,7 @@ const BugDetails = () => {
         bug_id: id,
         text: text.trim(),
         user_id: userProfile.id,
+        user_name: userProfile?.nickname || userProfile?.full_name || userProfile?.email || 'Unknown',
         attachments: commentAttachments
       };
 
