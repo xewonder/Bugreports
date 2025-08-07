@@ -132,12 +132,17 @@ const UserRoleManagement = () => {
         throw new Error('You cannot change your own admin role');
       }
 
+      // Sanitize update payload
+      const ALLOWED_FIELDS = ['email','full_name','nickname','role','is_active'];
+      const updateData = ALLOWED_FIELDS.reduce((acc, key) => {
+        if (Object.prototype.hasOwnProperty.call(updates, key)) acc[key] = updates[key];
+        return acc;
+      }, {});
+      updateData.updated_at = new Date().toISOString();
+
       const { data, error } = await supabase
         .from('profiles_mgg_2024')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', userId)
         .select();
 
