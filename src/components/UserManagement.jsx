@@ -113,13 +113,16 @@ const UserManagement = () => {
 
       console.log('Found existing user:', existingUser);
 
-      // Prepare the update data
-      const updateData = {
-        ...updates,
-        updated_at: new Date().toISOString()
-      };
+      // Prepare the update data (sanitize to avoid immutable/system columns)
+      const ALLOWED_FIELDS = ['email','full_name','nickname','role','is_active'];
+      const updateData = ALLOWED_FIELDS.reduce((acc, key) => {
+        if (Object.prototype.hasOwnProperty.call(updates, key)) acc[key] = updates[key];
+        return acc;
+      }, {});
+      // Let DB manage created_at; we only touch updated_at if the column exists
+      updateData.updated_at = new Date().toISOString();
 
-      console.log('Update data:', updateData);
+      console.log('Update data (sanitized):', updateData);
 
       // Update user in Supabase
       const { data, error } = await supabase.
