@@ -1,111 +1,83 @@
 // supabase/functions/send-notification-email/index.ts
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts';
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts'
 
-// Configure SMTP settings
-// Use environment variables in production, fallback to test values for development
+// Basic CORS headers
+const corsHeaders: HeadersInit = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+}
+
+// SMTP config from env (fallbacks for local dev)
 const SMTP_CONFIG = {
-  host: Deno.env.get('SMTP_HOST') || 'smtp.gmail.com',
-  port: Number(Deno.env.get('SMTP_PORT')) || 587,
-  username: Deno.env.get('SMTP_USERNAME') || 'your-email@gmail.com', // Replace with your email
-  password: Deno.env.get('SMTP_PASSWORD') || 'your-app-password', // Replace with your app password
-  fromEmail: Deno.env.get('FROM_EMAIL') || 'notifications@mgg.com'
-};
+  host: Deno.env.get('SMTP_HOST') ?? '',
+  port: Number(Deno.env.get('SMTP_PORT') ?? '587'),
+  username: Deno.env.get('SMTP_USERNAME') ?? '',
+  password: Deno.env.get('SMTP_PASSWORD') ?? '',
+  fromEmail: Deno.env.get('FROM_EMAIL') ?? 'no-reply@example.com',
+}
 
-console.log('SMTP Configuration initialized (without sensitive data)');
+serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
-serve(async (req) => {
   try {
-    // Handle preflight CORS
-    if (req.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-        },
-        status: 204
-      });
-    }
-
-    // Only allow POST requests
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 405
-      });
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // Parse request body
-    const { to, subject, html } = await req.json();
+    const { to, subject, html, text } = await req.json()
 
-    console.log(`Attempting to send email to: ${to}`);
-    console.log(`Subject: ${subject}`);
-
-    // Validate required fields
-    if (!to || !subject || !html) {
-      console.error('Missing required fields');
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: to, subject, html' }),
-        {
-          headers: { 'Content-Type': 'application/json' },
-          status: 400
-        }
-      );
+    if (!to || !subject || (!html && !text)) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, (html or text)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
-    // Initialize SMTP client
-    const client = new SmtpClient();
-    
-    console.log(`Connecting to SMTP server: ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}`);
+    // If SMTP not configured, short‑circuit with success in dev to avoid blocking
+    if (!SMTP_CONFIG.host || !SMTP_CONFIG.username || !SMTP_CONFIG.password) {
+      console.warn('SMTP not fully configured — returning 202 accepted (dev mode)')
+      return new Response(JSON.stringify({ ok: true, dev: true }), {
+        status: 202,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Send email
+    const client = new SmtpClient()
     await client.connectTLS({
       hostname: SMTP_CONFIG.host,
       port: SMTP_CONFIG.port,
       username: SMTP_CONFIG.username,
       password: SMTP_CONFIG.password
-    });
+    })
 
-    console.log('SMTP connection successful, sending email...');
-    
-    // Send email
     await client.send({
       from: SMTP_CONFIG.fromEmail,
-      to: to,
-      subject: subject,
-      content: html,
-      html: html
-    });
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      content: text ?? '',
+      html
+    })
 
-    // Close connection
-    await client.close();
-    console.log('Email sent successfully');
+    await client.close()
 
-    // Return success response
-    return new Response(
-      JSON.stringify({ success: true, message: 'Email sent successfully' }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        status: 200
-      }
-    );
-  } catch (error) {
-    // Log and return error
-    console.error('Error sending email:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Failed to send email',
-        stack: error.stack || 'No stack trace available'
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        status: 500
-      }
-    );
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  } catch (err) {
+    console.error('send-notification-email error:', err)
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
   }
-});
+})
