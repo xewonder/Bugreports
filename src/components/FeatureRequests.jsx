@@ -43,6 +43,7 @@ const FeatureRequests = () => {
   const [showMoveToRoadmapModal, setShowMoveToRoadmapModal] = useState(false);
   const [featureToMove, setFeatureToMove] = useState(null);
   const [userComments, setUserComments] = useState({}); // Track features where user commented
+  const [showRoadmapItems, setShowRoadmapItems] = useState(false); // New state to toggle showing roadmap items
   const commentsEndRef = useRef(null);
 
   useEffect(() => {
@@ -615,6 +616,11 @@ const FeatureRequests = () => {
   // Filter and sort features
   const filteredFeatures = features.
   filter((feature) => {
+    // Filter out features with status 'planned' unless showRoadmapItems is true
+    if (feature.status === 'planned' && !showRoadmapItems) {
+      return false;
+    }
+
     const matchesSearch =
     feature.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     feature.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -887,10 +893,11 @@ const FeatureRequests = () => {
           </motion.div>
         }
 
-        {/* Search */}
+        {/* Search and Filter Section - IMPROVED LAYOUT */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            {/* Search Box - 5/12 width on md screens */}
+            <div className="relative md:col-span-5">
               <SafeIcon icon={FiSearch} className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
@@ -898,35 +905,52 @@ const FeatureRequests = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-
             </div>
-            <div className="flex space-x-2">
+            
+            {/* Sort By - 2/12 width on md screens */}
+            <div className="md:col-span-2">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-
                 <option value="votes">Most Voted</option>
                 <option value="created_at">Newest</option>
                 <option value="priority">Priority</option>
               </select>
             </div>
-            {/* User Filter - New */}
-            {userProfile &&
-            <select
-              value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-
-                <option value="All">All Features</option>
-                <option value="My Posts">My Feature Requests</option>
-                <option value="My Comments">Features I Commented On</option>
-              </select>
-            }
-            <div className="flex items-center justify-center bg-gray-50 rounded-lg px-4 py-2">
+            
+            {/* User Filter - 3/12 width on md screens */}
+            {userProfile && (
+              <div className="md:col-span-3">
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="All">All Features</option>
+                  <option value="My Posts">My Feature Requests</option>
+                  <option value="My Comments">Features I Commented On</option>
+                </select>
+              </div>
+            )}
+            
+            {/* Feature Count & Roadmap Toggle - 2/12 width on md screens */}
+            <div className="md:col-span-2 flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
               <span className="text-sm text-gray-600">
-                {filteredFeatures.length} of {features.length} features
+                {filteredFeatures.length} of {features.filter(f => f.status !== 'planned' || showRoadmapItems).length}
               </span>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="showRoadmapItems"
+                  checked={showRoadmapItems}
+                  onChange={() => setShowRoadmapItems(!showRoadmapItems)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="showRoadmapItems" className="ml-2 text-sm text-gray-600">
+                  Show roadmap
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -1039,7 +1063,7 @@ const FeatureRequests = () => {
                     </button>
 
                     {/* Move to Roadmap Button for admins/developers */}
-                    {canMoveToRoadmap(feature) &&
+                    {canMoveToRoadmap(feature) && feature.status !== 'planned' &&
                   <button
                     onClick={() => handleMoveToRoadmap(feature)}
                     className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -1192,6 +1216,14 @@ const FeatureRequests = () => {
               'Try adjusting your search or filters' :
               'There are no feature requests yet.'}
               </p>
+              {!showRoadmapItems && features.some(f => f.status === 'planned') && (
+                <button
+                  onClick={() => setShowRoadmapItems(true)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg inline-flex items-center space-x-2">
+                  <SafeIcon icon={FiMap} />
+                  <span>Show Roadmap Items</span>
+                </button>
+              )}
             </motion.div>
           }
         </div>
