@@ -2,14 +2,17 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts';
 
-// Configure your SMTP settings here
+// Configure SMTP settings
+// Use environment variables in production, fallback to test values for development
 const SMTP_CONFIG = {
-  host: Deno.env.get('SMTP_HOST') || 'smtp.example.com',
+  host: Deno.env.get('SMTP_HOST') || 'smtp.gmail.com',
   port: Number(Deno.env.get('SMTP_PORT')) || 587,
-  username: Deno.env.get('SMTP_USERNAME') || 'your-email@example.com',
-  password: Deno.env.get('SMTP_PASSWORD') || 'your-password',
+  username: Deno.env.get('SMTP_USERNAME') || 'your-email@gmail.com', // Replace with your email
+  password: Deno.env.get('SMTP_PASSWORD') || 'your-app-password', // Replace with your app password
   fromEmail: Deno.env.get('FROM_EMAIL') || 'notifications@mgg.com'
 };
+
+console.log('SMTP Configuration initialized (without sensitive data)');
 
 serve(async (req) => {
   try {
@@ -36,8 +39,12 @@ serve(async (req) => {
     // Parse request body
     const { to, subject, html } = await req.json();
 
+    console.log(`Attempting to send email to: ${to}`);
+    console.log(`Subject: ${subject}`);
+
     // Validate required fields
     if (!to || !subject || !html) {
+      console.error('Missing required fields');
       return new Response(
         JSON.stringify({ error: 'Missing required fields: to, subject, html' }),
         {
@@ -49,6 +56,8 @@ serve(async (req) => {
 
     // Initialize SMTP client
     const client = new SmtpClient();
+    
+    console.log(`Connecting to SMTP server: ${SMTP_CONFIG.host}:${SMTP_CONFIG.port}`);
     await client.connectTLS({
       hostname: SMTP_CONFIG.host,
       port: SMTP_CONFIG.port,
@@ -56,6 +65,8 @@ serve(async (req) => {
       password: SMTP_CONFIG.password
     });
 
+    console.log('SMTP connection successful, sending email...');
+    
     // Send email
     await client.send({
       from: SMTP_CONFIG.fromEmail,
@@ -67,6 +78,7 @@ serve(async (req) => {
 
     // Close connection
     await client.close();
+    console.log('Email sent successfully');
 
     // Return success response
     return new Response(
@@ -83,7 +95,10 @@ serve(async (req) => {
     // Log and return error
     console.error('Error sending email:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to send email' }),
+      JSON.stringify({ 
+        error: error.message || 'Failed to send email',
+        stack: error.stack || 'No stack trace available'
+      }),
       {
         headers: {
           'Content-Type': 'application/json',

@@ -91,7 +91,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                 </motion.span>
             } 
               {!item.hideCounter && userProfile &&
-            <div className="relative">
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <UserNotificationsCounter contentType={item.contentType} />
                 </div>
             }

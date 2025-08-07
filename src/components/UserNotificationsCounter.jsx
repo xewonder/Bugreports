@@ -74,7 +74,7 @@ const UserNotificationsCounter = ({ contentType = null }) => {
   if (unreadCount === 0) return null;
 
   return (
-    <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+    <span className="absolute -top-1 right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
       {unreadCount > 9 ? '9+' : unreadCount}
     </span>);
 

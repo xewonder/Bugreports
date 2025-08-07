@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import supabase from '../lib/supabase';
 
@@ -12,24 +12,34 @@ const UserNotificationsService = () => {
   // Function to send email notification for new mentions
   const sendEmailNotification = async (mention) => {
     try {
+      console.log('Processing notification for mention:', mention.id);
+      
       // Get information about the mentioned user
-      const { data: mentionedUser, error: userError } = await supabase.
-      from('profiles_mgg_2024').
-      select('email, full_name, nickname').
-      eq('id', mention.mentioned_user_id).
-      single();
+      const { data: mentionedUser, error: userError } = await supabase
+        .from('profiles_mgg_2024')
+        .select('email, full_name, nickname, notifications')
+        .eq('id', mention.mentioned_user_id)
+        .single();
 
       if (userError || !mentionedUser) {
         console.error('Error fetching mentioned user:', userError);
         return;
       }
 
+      // Check if the user has email notifications enabled
+      if (!mentionedUser.notifications?.email) {
+        console.log('User has email notifications disabled:', mentionedUser.email);
+        return;
+      }
+
+      console.log('User has email notifications enabled:', mentionedUser.email);
+
       // Get information about the user who mentioned
-      const { data: mentionerUser, error: mentionerError } = await supabase.
-      from('profiles_mgg_2024').
-      select('full_name, nickname').
-      eq('id', mention.mentioned_by_id).
-      single();
+      const { data: mentionerUser, error: mentionerError } = await supabase
+        .from('profiles_mgg_2024')
+        .select('full_name, nickname')
+        .eq('id', mention.mentioned_by_id)
+        .single();
 
       if (mentionerError || !mentionerUser) {
         console.error('Error fetching mentioner user:', mentionerError);
@@ -60,11 +70,17 @@ const UserNotificationsService = () => {
       }
 
       // Get the content title
-      const { data: contentData, error: contentError } = await supabase.
-      from(contentTypeInfo.table).
-      select(contentTypeInfo.nameField).
-      eq('id', contentTypeInfo.isComment ? mention.content_id.split('_')[0] : mention.content_id).
-      single();
+      const contentId = contentTypeInfo.isComment 
+        ? mention.content_id.split('_')[0] 
+        : mention.content_id;
+        
+      console.log(`Fetching content from ${contentTypeInfo.table} with ID ${contentId}`);
+      
+      const { data: contentData, error: contentError } = await supabase
+        .from(contentTypeInfo.table)
+        .select(contentTypeInfo.nameField)
+        .eq('id', contentId)
+        .single();
 
       if (contentError) {
         console.error('Error fetching content details:', contentError);
@@ -116,20 +132,28 @@ const UserNotificationsService = () => {
         `
       };
 
+      console.log('Sending email notification via Supabase function');
+      
       // Call the serverless function to send the email
-      // Note: In a production environment, you would typically have a serverless function
-      // that handles the actual sending of emails using services like SendGrid, AWS SES, etc.
-      // For this example, we'll use Supabase's edge functions to handle email sending
-      const { error: emailError } = await supabase.functions.invoke('send-notification-email', {
+      const { data, error: emailError } = await supabase.functions.invoke('send-notification-email', {
         body: emailPayload
       });
 
       if (emailError) {
         console.error('Error sending notification email:', emailError);
       } else {
-        console.log('Email notification sent successfully');
+        console.log('Email notification sent successfully:', data);
+        
+        // Mark the notification as sent in the database
+        const { error: updateError } = await supabase
+          .from('user_mentions_mgg2024')
+          .update({ email_sent: true })
+          .eq('id', mention.id);
+          
+        if (updateError) {
+          console.error('Error updating mention record:', updateError);
+        }
       }
-
     } catch (error) {
       console.error('Error in sendEmailNotification:', error);
     }
@@ -138,34 +162,30 @@ const UserNotificationsService = () => {
   // Listen for new mentions and send email notifications
   useEffect(() => {
     if (!userProfile) return;
+    
+    console.log('Setting up user mentions email notification listener');
 
     // Set up real-time subscription for mentions
-    const subscription = supabase.
-    channel('user_mentions_emails').
-    on('postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'user_mentions_mgg2024'
-    },
-    async (payload) => {
-      // Check if the user has email notifications enabled
-      const { data: userSettings } = await supabase.
-      from('profiles_mgg_2024').
-      select('email, notifications').
-      eq('id', payload.new.mentioned_user_id).
-      single();
-
-      // If user has email notifications enabled, send the email
-      if (userSettings?.notifications?.email === true) {
-        await sendEmailNotification(payload.new);
-      }
-    }
-    ).
-    subscribe();
+    const subscription = supabase
+      .channel('user_mentions_emails')
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_mentions_mgg2024'
+        },
+        async (payload) => {
+          console.log('New mention detected:', payload.new);
+          
+          // Process the new mention for email notification
+          await sendEmailNotification(payload.new);
+        }
+      )
+      .subscribe();
 
     // Clean up subscription
     return () => {
+      console.log('Cleaning up user mentions email notification listener');
       subscription.unsubscribe();
     };
   }, [userProfile]);

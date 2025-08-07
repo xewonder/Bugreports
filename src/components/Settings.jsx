@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import SafeIcon from '../common/SafeIcon';
+import EmailNotificationTester from './EmailNotificationTester';
 import * as FiIcons from 'react-icons/fi';
 
 const { FiUser, FiMail, FiSettings, FiBell, FiGlobe, FiLock, FiEye, FiSave, FiAlertCircle, FiCheckCircle, FiX } = FiIcons;
@@ -38,6 +39,7 @@ const Settings = () => {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
+  const [showEmailTester, setShowEmailTester] = useState(false);
 
   // Initialize settings with actual user profile data
   useEffect(() => {
@@ -279,12 +281,26 @@ const Settings = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="bg-white rounded-xl shadow-sm p-6">
 
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <SafeIcon icon={FiBell} className="text-blue-600" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <SafeIcon icon={FiBell} className="text-blue-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
+            <button
+              onClick={() => setShowEmailTester(!showEmailTester)}
+              className="text-sm text-blue-600 hover:text-blue-800 flex items-center space-x-1">
+              <SafeIcon icon={FiMail} />
+              <span>{showEmailTester ? "Hide Email Tester" : "Test Email Notifications"}</span>
+            </button>
           </div>
+
+          {showEmailTester && (
+            <div className="mb-6">
+              <EmailNotificationTester />
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">

@@ -232,7 +232,8 @@ const UserNotifications = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]"
+          style={{ maxHeight: 'calc(100vh - 100px)' }}>
 
             <div className="flex items-center justify-between p-3 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
@@ -246,7 +247,7 @@ const UserNotifications = () => {
             }
             </div>
             
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[400px] overflow-y-auto">
               {loading ?
             <div className="p-4 text-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
