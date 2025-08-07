@@ -300,6 +300,7 @@ const FeatureRequests = () => {
           priority: form.priority,
           status: 'requested',
           user_id: userProfile.id,
+          user_name: userProfile?.nickname || userProfile?.full_name || 'Unknown',
           tags: tagsArray,
           attachments: formAttachments
         };
