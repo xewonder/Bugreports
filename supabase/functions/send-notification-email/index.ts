@@ -1,83 +1,92 @@
-// supabase/functions/send-notification-email/index.ts
-import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
-import { SmtpClient } from 'https://deno.land/x/smtp@v0.7.0/mod.ts'
+// send-notification-email/index.ts
+// Deno runtime Edge Function
 
-// Basic CORS headers
-const corsHeaders: HeadersInit = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/denomailer/mod.ts";
+
+// CORS helper
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
 }
 
-// SMTP config from env (fallbacks for local dev)
-const SMTP_CONFIG = {
-  host: Deno.env.get('SMTP_HOST') ?? '',
-  port: Number(Deno.env.get('SMTP_PORT') ?? '587'),
-  username: Deno.env.get('SMTP_USERNAME') ?? '',
-  password: Deno.env.get('SMTP_PASSWORD') ?? '',
-  fromEmail: Deno.env.get('FROM_EMAIL') ?? 'no-reply@example.com',
-}
-
-serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+Deno.serve(async (req) => {
+  // Handle preflight OPTIONS request
+  if (req.method === "OPTIONS") {
+    return new Response("OK", { headers: corsHeaders() });
   }
 
   try {
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    // ✅ Auth check using Supabase Auth
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing Authorization" }), {
+        status: 401,
+        headers: corsHeaders(),
+      });
     }
 
-    const { to, subject, html, text } = await req.json()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(authHeader);
 
-    if (!to || !subject || (!html && !text)) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, (html or text)' }), {
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: corsHeaders(),
+      });
+    }
+
+    // ✅ Read request body
+    const { to, subject, message } = await req.json();
+
+    if (!to || !subject || !message) {
+      return new Response(JSON.stringify({ error: "Missing fields" }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+        headers: corsHeaders(),
+      });
     }
 
-    // If SMTP not configured, short‑circuit with success in dev to avoid blocking
-    if (!SMTP_CONFIG.host || !SMTP_CONFIG.username || !SMTP_CONFIG.password) {
-      console.warn('SMTP not fully configured — returning 202 accepted (dev mode)')
-      return new Response(JSON.stringify({ ok: true, dev: true }), {
-        status: 202,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    // ✅ Load SMTP secrets from Supabase Edge Function Secrets
+    const smtpClient = new SMTPClient({
+      connection: {
+        hostname: Deno.env.get("SMTP_HOST")!,
+        port: Number(Deno.env.get("SMTP_PORT")!),
+        tls: true,
+        auth: {
+          username: Deno.env.get("SMTP_USER")!,
+          password: Deno.env.get("SMTP_PASS")!,
+        },
+      },
+    });
 
-    // Send email
-    const client = new SmtpClient()
-    await client.connectTLS({
-      hostname: SMTP_CONFIG.host,
-      port: SMTP_CONFIG.port,
-      username: SMTP_CONFIG.username,
-      password: SMTP_CONFIG.password
-    })
-
-    await client.send({
-      from: SMTP_CONFIG.fromEmail,
-      to: Array.isArray(to) ? to : [to],
+    // ✅ Send email
+    await smtpClient.send({
+      from: Deno.env.get("FROM_EMAIL")!,
+      to,
       subject,
-      content: text ?? '',
-      html
-    })
+      content: message,
+    });
 
-    await client.close()
+    await smtpClient.close();
 
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return new Response(
+      JSON.stringify({ success: true, sentTo: to }),
+      { status: 200, headers: corsHeaders() }
+    );
   } catch (err) {
-    console.error('send-notification-email error:', err)
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    console.error(err);
+    return new Response(
+      JSON.stringify({ error: err.message || "Internal Server Error" }),
+      { status: 500, headers: corsHeaders() }
+    );
   }
-})
+});
