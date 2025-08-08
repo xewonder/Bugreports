@@ -232,8 +232,11 @@ const UserNotifications = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]"
-          style={{ maxHeight: 'calc(100vh - 100px)' }}>
+          className="fixed left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-[999]"
+          style={{ 
+            maxHeight: 'calc(100vh - 100px)',
+            top: '60px'
+          }}>
 
             <div className="flex items-center justify-between p-3 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
