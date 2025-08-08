@@ -107,7 +107,7 @@ const UserNotifications = () => {
               contentLink = `/prompts`;
               contentTitle = 'a power prompt comment';
               break;
-              +            case 'roadmap':
+              case 'roadmap':
               contentLink = `/roadmap`;
              contentTitle = 'a roadmap item';
              break;
