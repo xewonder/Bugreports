@@ -24,11 +24,11 @@ const UserNotifications = () => {
   useEffect(() => {
     const checkMentionsTable = async () => {
       try {
-        const { data, error } = await supabase.
-        from('user_mentions_mgg2024').
-        select('id').
-        limit(1).
-        maybeSingle();
+        const { data, error } = await supabase
+          .from('user_mentions_mgg2024')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
 
         const exists = !error || error.code !== '42P01';
         console.log('Mentions table exists:', exists);
@@ -51,19 +51,19 @@ const UserNotifications = () => {
         setLoading(true);
         console.log("Fetching mentions for user:", userProfile.id);
 
-        const { data, error } = await supabase.
-        from('user_mentions_mgg2024').
-        select(`
+        const { data, error } = await supabase
+          .from('user_mentions_mgg2024')
+          .select(`
             id,
             seen,
             created_at,
             mentioned_by:mentioned_by_id(id, full_name, nickname),
             content_type,
             content_id
-          `).
-        eq('mentioned_user_id', userProfile.id).
-        order('created_at', { ascending: false }).
-        limit(20);
+          `)
+          .eq('mentioned_user_id', userProfile.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
 
         if (error) throw error;
 
@@ -145,21 +145,22 @@ const UserNotifications = () => {
 
     // Set up real-time subscription only if table exists
     if (mentionsTableExists) {
-      const subscription = supabase.
-      channel('user_mentions').
-      on('postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'user_mentions_mgg2024',
-        filter: `mentioned_user_id=eq.${userProfile.id}`
-      },
-      (payload) => {
-        // Add new notification
-        fetchNotifications();
-      }
-      ).
-      subscribe();
+      const subscription = supabase
+        .channel('user_mentions')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_mentions_mgg2024',
+            filter: `mentioned_user_id=eq.${userProfile.id}`
+          },
+          () => {
+            // Add new notification
+            fetchNotifications();
+          }
+        )
+        .subscribe();
 
       return () => {
         subscription.unsubscribe();
@@ -172,10 +173,10 @@ const UserNotifications = () => {
     if (!mentionsTableExists) return;
 
     try {
-      const { error } = await supabase.
-      from('user_mentions_mgg2024').
-      update({ seen: true }).
-      eq('id', notificationId);
+      const { error } = await supabase
+        .from('user_mentions_mgg2024')
+        .update({ seen: true })
+        .eq('id', notificationId);
 
       if (error) throw error;
 
@@ -194,11 +195,11 @@ const UserNotifications = () => {
     if (notifications.length === 0 || !mentionsTableExists) return;
 
     try {
-      const { error } = await supabase.
-      from('user_mentions_mgg2024').
-      update({ seen: true }).
-      eq('mentioned_user_id', userProfile.id).
-      eq('seen', false);
+      const { error } = await supabase
+        .from('user_mentions_mgg2024')
+        .update({ seen: true })
+        .eq('mentioned_user_id', userProfile.id)
+        .eq('seen', false);
 
       if (error) throw error;
 
