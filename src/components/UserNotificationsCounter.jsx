@@ -18,11 +18,11 @@ const UserNotificationsCounter = ({ contentType = null }) => {
     const fetchUnreadCount = async () => {
       try {
         // Build the query
-        let query = supabase
-          .from('user_mentions_mgg2024')
-          .select('id')
-          .eq('mentioned_user_id', userProfile.id)
-          .eq('seen', false);
+        let query = supabase.
+        from('user_mentions_mgg2024').
+        select('id').
+        eq('mentioned_user_id', userProfile.id).
+        eq('seen', false);
 
         // Add content type filter if provided
         if (contentType) {
@@ -50,21 +50,20 @@ const UserNotificationsCounter = ({ contentType = null }) => {
     fetchUnreadCount();
 
     // Set up real-time subscription
-    const subscription = supabase
-      .channel('user_mentions_counter')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_mentions_mgg2024',
-          filter: `mentioned_user_id=eq.${userProfile.id}`
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
+    const subscription = supabase.
+    channel('user_mentions_counter').
+    on('postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'user_mentions_mgg2024',
+      filter: `mentioned_user_id=eq.${userProfile.id}`
+    },
+    () => {
+      fetchUnreadCount();
+    }
+    ).
+    subscribe();
 
     return () => {
       subscription.unsubscribe();
