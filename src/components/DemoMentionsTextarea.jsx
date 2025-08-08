@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import MentionsTextarea from './MentionsTextarea';
 import { useMention } from '../contexts/MentionContext';
 import { motion } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
@@ -49,7 +49,7 @@ const DemoMentionsTextarea = () => {
       </div>
       
       <div className="space-y-3">
-        <DisplayMentionsTextarea
+        <MentionsTextarea
           value={text}
           onChange={handleChange}
           placeholder="What would you like to discuss? (Type @ to mention users)"

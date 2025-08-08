@@ -7,7 +7,7 @@ import SafeIcon from '../common/SafeIcon';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
 import AssigneeAutocomplete from './AssigneeAutocomplete';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import MentionsTextarea from './MentionsTextarea';
 import * as FiIcons from 'react-icons/fi';
 import supabase from '../lib/supabase';
 
@@ -192,7 +192,7 @@ const CreateBug = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description *
                 </label>
-                <DisplayMentionsTextarea
+                <MentionsTextarea
                   value={form.description}
                   onChange={(e) => handleChange('description', e.target.value)}
                   placeholder="Detailed description of the bug, steps to reproduce, expected behavior, etc. (Type @ to mention users)"
