@@ -6,7 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import MentionsTextarea from './MentionsTextarea';
 import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -675,7 +675,7 @@ const TipsAndTricks = () => {
                   Content *
                 </label>
                 <div className="relative">
-                  <DisplayMentionsTextarea
+                  <MentionsTextarea
                     value={form.content}
                     onChange={(e) => {
                       setForm({ ...form, content: e.target.value });
@@ -919,7 +919,7 @@ const TipsAndTricks = () => {
                     {/* Add Comment */}
                     {userProfile ?
                 <div className="space-y-3">
-                        <DisplayMentionsTextarea
+                        <MentionsTextarea
                           value={newComment[tip.id] || ''}
                           onChange={(e) => setNewComment({ ...newComment, [tip.id]: e.target.value })}
                           placeholder="Add a comment... (Type @ to mention users)"

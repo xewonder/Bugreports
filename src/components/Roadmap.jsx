@@ -7,7 +7,6 @@ import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
 import MentionsTextarea from './MentionsTextarea';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import AssigneeAutocomplete from './AssigneeAutocomplete';
 import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
@@ -588,7 +587,7 @@ const Roadmap = () => {
                   Description *
                 </label>
                 <div className="relative">
-                  <DisplayMentionsTextarea
+                  <MentionsTextarea
                     value={form.description}
                     onChange={(e) => handleFormChange('description', e.target.value)}
                     minRows={4}
@@ -1028,7 +1027,7 @@ const Roadmap = () => {
                       {/* Add Comment */}
                       {userProfile ?
                 <div className="space-y-3">
-                          <DisplayMentionsTextarea
+                          <MentionsTextarea
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
                             placeholder="Add a comment... (Type @ to mention users)"

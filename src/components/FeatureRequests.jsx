@@ -6,7 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import MentionsTextarea from './MentionsTextarea';
 import MoveToRoadmapModal from './MoveToRoadmapModal';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -795,7 +795,7 @@ const FeatureRequests = () => {
                   Description *
                 </label>
                 <div className="relative">
-                  <DisplayMentionsTextarea
+                  <MentionsTextarea
                   value={form.description}
                   onChange={(e) => {
                     setForm({ ...form, description: e.target.value });
@@ -1161,7 +1161,7 @@ const FeatureRequests = () => {
                     {/* Add Comment */}
                     {userProfile ?
                 <div className="space-y-3">
-                        <DisplayMentionsTextarea
+                        <MentionsTextarea
                           value={newComment[feature.id] || ''}
                           onChange={(e) => setNewComment({ ...newComment, [feature.id]: e.target.value })}
                           placeholder="Add a comment... (Type @ to mention users)"
