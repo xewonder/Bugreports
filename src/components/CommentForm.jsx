@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import SafeIcon from '../common/SafeIcon';
 import { FiSend } from 'react-icons/fi';
 import MentionsTextarea from './MentionsTextarea';
