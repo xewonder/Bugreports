@@ -7,7 +7,6 @@ import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
 import MentionsTextarea from './MentionsTextarea';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
 import CommentWithMentions from './CommentWithMentions';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
@@ -767,7 +766,7 @@ const PowerPrompts = () => {
           </div>
           {editingComment && editingComment.id === comment.id ?
           <div className="mt-1 space-y-2">
-              <DisplayMentionsTextarea
+              <MentionsTextarea
                 value={editingComment.text}
                 onChange={(e) => setEditingComment({ ...editingComment, text: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -890,7 +889,7 @@ const PowerPrompts = () => {
                   Prompt Text *
                 </label>
                 <div className="relative">
-                  <DisplayMentionsTextarea
+                  <MentionsTextarea
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Enter the prompt text that others can use (Type @ to mention users)"
@@ -1114,7 +1113,7 @@ const PowerPrompts = () => {
                   {userProfile &&
               <div className="border-t border-gray-200 pt-4">
                       <div className="space-y-3">
-                        <DisplayMentionsTextarea
+                        <MentionsTextarea
                           value={newComment[prompt.id] || ''}
                           onChange={(e) => setNewComment({ ...newComment, [prompt.id]: e.target.value })}
                           placeholder="Add a comment... (Type @ to mention users)"

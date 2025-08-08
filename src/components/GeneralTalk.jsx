@@ -6,7 +6,7 @@ import SafeIcon from '../common/SafeIcon';
 import Header from './Header';
 import FileUpload from './FileUpload';
 import AttachmentViewer from './AttachmentViewer';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import MentionsTextarea from './MentionsTextarea';
 import * as FiIcons from 'react-icons/fi';
 import { format } from 'date-fns';
 import supabase from '../lib/supabase';
@@ -715,7 +715,7 @@ const GeneralTalk = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Content *
                 </label>
-                <DisplayMentionsTextarea
+                <MentionsTextarea
                   value={form.content}
                   onChange={(e) => {
                     setForm({ ...form, content: e.target.value });
@@ -960,7 +960,7 @@ const GeneralTalk = () => {
                     {/* Add Comment */}
                     {userProfile ?
                 <div className="space-y-3">
-                        <DisplayMentionsTextarea
+                        <MentionsTextarea
                           value={newComment[topic.id] || ''}
                           onChange={(e) => setNewComment({ ...newComment, [topic.id]: e.target.value })}
                           placeholder="Add a comment... (Type @ to mention users)"

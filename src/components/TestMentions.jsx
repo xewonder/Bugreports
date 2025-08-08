@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import DisplayMentionsTextarea from './DisplayMentionsTextarea';
+import MentionsTextarea from './MentionsTextarea';
 import { useMention } from '../contexts/MentionContext';
 import SafeIcon from '../common/SafeIcon';
 import { FiInfo, FiCheck, FiUsers, FiAlertCircle } from 'react-icons/fi';
@@ -116,8 +116,8 @@ const TestMentions = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Type @ to mention users:
             </label>
-            {/* Use the DisplayMentionsTextarea component which combines both EnhancedTextarea and MentionSuggestions */}
-            <DisplayMentionsTextarea
+            {/* Use the MentionsTextarea component which combines both EnhancedTextarea and MentionSuggestions */}
+            <MentionsTextarea
               value={text}
               onChange={handleTextChange}
               placeholder="Type @ followed by a username to test mentions..."
