@@ -15,7 +15,8 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
     selectedIndex,
     setSelectedIndex,
     setShowSuggestions,
-    currentMentionStartIndex
+    currentMentionStartIndex,
+    setCurrentMentionStartIndex
   } = useMention();
   
   const suggestionsRef = useRef(null);
@@ -129,26 +130,34 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
       // Most important part: directly call the parent's onValueChange with the new text
       if (onValueChange && typeof onValueChange === 'function') {
         onValueChange(newText);
+
+        // Place cursor after the inserted mention once the value updates
+        const newCursorPosition = lastAtIndex + mentionText.length + 1;
+        setTimeout(() => {
+          textarea.selectionStart = newCursorPosition;
+          textarea.selectionEnd = newCursorPosition;
+          textarea.focus();
+        }, 0);
       } else {
         // Fallback to manually updating the textarea value
         textarea.value = newText;
-        
+
         // Create and dispatch an input event to trigger React's onChange
         const inputEvent = new Event('input', { bubbles: true });
         textarea.dispatchEvent(inputEvent);
-        
+
         // Create a synthetic event for React's onChange
         const syntheticEvent = {
           target: { value: newText },
           preventDefault: () => {},
           stopPropagation: () => {}
         };
-        
-        // Find onChange handler on the textarea element
+
+        // Force React to detect the change if using its internal value tracker
         if (textarea._valueTracker) {
-          textarea._valueTracker.setValue(''); // Force React to detect the change
+          textarea._valueTracker.setValue('');
         }
-        
+
         // Set cursor position after the inserted mention
         const newCursorPosition = lastAtIndex + mentionText.length + 1;
         setTimeout(() => {
@@ -157,9 +166,10 @@ const MentionSuggestions = ({ textAreaRef, onValueChange = null }) => {
           textarea.focus();
         }, 0);
       }
-      
-      // Hide suggestions
+
+      // Reset mention state and hide suggestions
       setShowSuggestions(false);
+      setCurrentMentionStartIndex(-1);
       console.log('✅ Mention inserted successfully');
     } catch (error) {
       console.error('❌ Error inserting mention:', error);
