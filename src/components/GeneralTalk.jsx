@@ -409,8 +409,8 @@ const GeneralTalk = () => {
 
       if (error) throw error;
 
-      // Process mentions in the comment
-      processMentions(text.trim(), 'general_topic_comment', topicId);
+      // Process mentions in the comment using the comment ID
+      processMentions(text.trim(), 'general_topic_comment', data[0].id);
 
       // Enhance the comment with user data
       const { data: userData, error: userError } = await supabase.

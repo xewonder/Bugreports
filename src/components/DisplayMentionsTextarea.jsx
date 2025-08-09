@@ -1,5 +1,4 @@
 import React from 'react';
-import { useMention } from '../contexts/MentionContext';
 import MentionsTextarea from './MentionsTextarea';
 
 /**
@@ -30,16 +29,33 @@ const DisplayMentionsTextarea = ({
   style,
   ...props
 }) => {
-  const { renderWithMentions } = useMention();
-  
   // Transform the display value (what the user sees)
   // This ensures the user sees @username instead of @[username](userId)
   const displayValue = value ? value.replace(/@\[([^\]]+)\]\(([^)]+)\)/g, '@$1') : '';
-  
+
   // Handle changes in the textarea
   const handleChange = (e) => {
-    // When user types, we need to pass the event to the parent component
-    onChange(e);
+    const inputValue = e.target.value;
+
+    // Build a map of existing mentions from the original value
+    const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+    const mentionMap = {};
+    let match;
+    while ((match = mentionRegex.exec(value || '')) !== null) {
+      mentionMap[`@${match[1]}`] = match[0];
+    }
+
+    // Replace display mentions with their full markup counterparts
+    let newValue = inputValue;
+    Object.entries(mentionMap).forEach(([display, markup]) => {
+      newValue = newValue.split(display).join(markup);
+    });
+
+    const syntheticEvent = {
+      ...e,
+      target: { ...e.target, value: newValue }
+    };
+    onChange(syntheticEvent);
   };
 
   return (
