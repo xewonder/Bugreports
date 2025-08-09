@@ -1,134 +1,322 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthContext';
+import UserMention from '../components/UserMention';
+import supabase from '../lib/supabase';
 
-/**
- * MentionContext
- * - Looser @-trigger: allow start-of-line or any non-word char before '@'
- * - Fallback on submit: resolve plain @handles to users if user didn't pick from dropdown
- *
- * Exposed API (keep same names your app already uses):
- *   - getMentionTriggerAt(text, caretPos) -> { start, query } | null
- *   - processMentions(text, contentType, contentId) -> stores rows in user_mentions_mgg2024
- *
- * NOTE: We don't mutate caller text here; normalization is handled by the page (see GeneralTalk.jsx patch).
- */
+const MentionContext = createContext();
 
-const MentionContext = createContext(null);
-export const useMentionContext = () => useContext(MentionContext);
+export function MentionProvider({ children }) {
+  const { userProfile } = useAuth();
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionPosition, setMentionPosition] = useState({ top: 0, left: 0 });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [mentionsTableExists, setMentionsTableExists] = useState(true);
+  const [currentMentionStartIndex, setCurrentMentionStartIndex] = useState(-1);
 
-export default function MentionProvider({ children, users = [] }) {
-  /**
-   * Return current @-trigger if caret is inside an @word that started at a valid position.
-   */
-  const getMentionTriggerAt = (text, caretPos) => {
-    if (!text || typeof caretPos !== 'number') return null;
+  // Fetch all users for mention suggestions from Supabase
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Fetching users for mentions from Supabase...');
 
-    const lastAtIndex = text.lastIndexOf('@', Math.max(0, caretPos - 1));
-    if (lastAtIndex === -1) return null;
+        // Fetch all active users from profiles table
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles_mgg_2024')
+          .select('id, full_name, nickname, role, is_active')
+          .eq('is_active', true)
+          .order('full_name', { ascending: true });
 
-    // NEW: allow start-of-line OR any non-word char before '@'
-    const before = text[lastAtIndex - 1] || '';
-    const isValidMentionStart = lastAtIndex === 0 || /[^\w@]/.test(before);
-    if (!isValidMentionStart) return null;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          setUsers([]);
+          return;
+        }
 
-    const slice = text.slice(lastAtIndex + 1, caretPos);
-    // stop if whitespace/newline before caret
-    if (/\s/.test(slice)) return null;
+        console.log('✅ Fetched users for mentions:', profilesData?.length || 0, 'users');
 
-    return { start: lastAtIndex, query: slice };
-  };
+        // Transform the data to match expected format
+        const transformedUsers = (profilesData || []).map((profile) => ({
+          id: profile.id,
+          full_name: profile.full_name || 'Unknown User',
+          nickname: profile.nickname || profile.full_name || 'User',
+          role: profile.role || 'user'
+        }));
 
-  /**
-   * Helper to resolve a plain @handle to a user record (nickname preferred, else full_name)
-   */
-  const resolveHandle = (handle) => {
-    if (!handle) return null;
-    const h = handle.toLowerCase();
-    return (
-      users.find(
-        (u) =>
-          (u.nickname && u.nickname.toLowerCase() === h) ||
-          (u.full_name &&
-            u.full_name.toLowerCase().replace(/\s+/g, '') === h)
-      ) || null
-    );
-  };
+        setUsers(transformedUsers);
+      } catch (error) {
+        console.error('Error fetching users for mentions:', error);
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  /**
-   * Scan text for canonical mentions @[Display](id).
-   */
-  const extractCanonicalMentions = (text) => {
-    const tokenRegex = /\@\[(.+?)\]\(([a-f0-9-]{16,})\)/gi; // id may be UUID or similar
-    const out = [];
-    let m;
-    while ((m = tokenRegex.exec(text)) !== null) {
-      out.push({
-        display: m[1],
-        userId: m[2],
-        index: m.index,
-      });
+    fetchUsers();
+  }, []);
+
+  const searchUsers = useCallback((query) => {
+    if (!query || query.trim().length === 0) {
+      setMentionSuggestions([]);
+      return;
     }
-    return out;
-  };
 
-  /**
-   * Fallback: find plain @handles and resolve against loaded users.
-   */
-  const extractPlainHandleMentions = (text) => {
-    const plainHandleRegex = /@([A-Za-z0-9._-]{2,})/g;
-    const out = [];
-    const seen = new Set();
-    let m;
-    while ((m = plainHandleRegex.exec(text)) !== null) {
-      const handle = m[1];
-      if (seen.has(handle)) continue;
-      const u = resolveHandle(handle);
-      if (u) {
-        out.push({
-          display: u.nickname || u.full_name || handle,
-          userId: u.id,
-          index: m.index,
-        });
-        seen.add(handle);
+    const lowerQuery = query.toLowerCase().trim();
+    const filtered = users
+      .filter((user) => {
+        // Don't suggest the current user
+        if (userProfile && user.id === userProfile.id) return false;
+
+        const nickname = user.nickname?.toLowerCase() || '';
+        const fullName = user.full_name?.toLowerCase() || '';
+        return nickname.includes(lowerQuery) || fullName.includes(lowerQuery);
+      })
+      .slice(0, 5); // Limit to 5 suggestions
+
+    setMentionSuggestions(filtered);
+    setSelectedIndex(0);
+  }, [users, userProfile]);
+
+  const handleMentionInput = useCallback((e, textAreaRef) => {
+    if (!textAreaRef || !textAreaRef.current) {
+      return;
+    }
+
+    const textarea = textAreaRef.current;
+    const text = textarea.value;
+    const cursorPosition = textarea.selectionStart;
+
+    // Find the last @ symbol before cursor
+    const lastAtIndex = text.lastIndexOf('@', cursorPosition - 1);
+
+    if (lastAtIndex >= 0 && lastAtIndex < cursorPosition) {
+      // Check if @ is at the beginning or has a space/newline before it
+      const isValidMentionStart = lastAtIndex === 0 || /[\s\n]/.test(text[lastAtIndex - 1]);
+      
+      // Get text between @ and cursor
+      const textBetween = text.substring(lastAtIndex, cursorPosition);
+      const hasSpaceOrNewline = /[\s\n]/.test(textBetween.substring(1));
+
+      // If it's a valid mention start and there's no space/newline after @
+      if (isValidMentionStart && !hasSpaceOrNewline) {
+        const query = textBetween.substring(1); // Remove the @ symbol
+        setMentionQuery(query);
+        setCurrentMentionStartIndex(lastAtIndex);
+        searchUsers(query);
+
+        // Calculate position for dropdown with better accuracy
+        const rect = textarea.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(textarea);
+        const lineHeight = parseFloat(computedStyle.lineHeight) || 20;
+        const fontSize = parseFloat(computedStyle.fontSize) || 14;
+        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+        const paddingTop = parseFloat(computedStyle.paddingTop) || 0;
+
+        // Calculate approximate character width (monospace estimation)
+        const charWidth = fontSize * 0.6;
+
+        // Split text before cursor to calculate line and position
+        const textBeforeCursor = text.substring(0, lastAtIndex);
+        const lines = textBeforeCursor.split('\n');
+        const lineNumber = lines.length - 1;
+        const charPositionInLine = lines[lineNumber]?.length || 0;
+
+        // Calculate position
+        const top = rect.top + paddingTop + (lineNumber + 1) * lineHeight + window.scrollY + 5;
+        const left = Math.min(
+          rect.left + paddingLeft + charPositionInLine * charWidth + window.scrollX,
+          window.innerWidth - 280 // Ensure dropdown doesn't go off-screen
+        );
+
+        setMentionPosition({ top, left });
+        setShowSuggestions(true);
+        return;
       }
     }
-    return out;
+
+    // Hide suggestions if no @ or there's a space/newline
+    setShowSuggestions(false);
+  }, [searchUsers]);
+
+  // Extract mentions from text
+  const extractMentions = (text) => {
+    if (!text) return [];
+
+    console.log('🔍 Extracting mentions from text:', text);
+
+    // Match @[username](userId) patterns
+    const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+    const mentions = [];
+    let match;
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      const username = match[1].trim();
+      const userId = match[2];
+
+      mentions.push({
+        userId: userId,
+        username: username,
+        index: match.index
+      });
+    }
+
+    console.log('🔍 Found mentions:', mentions);
+    return mentions;
   };
 
-  /**
-   * Store mentions for a given content (type/id). Called after saving the content.
-   * - First, use canonical tokens @[Display](id)
-   * - If none, fallback to plain @handles
-   */
-  const processMentions = async (rawText, contentType, contentId) => {
-    const text = rawText || '';
-    let mentions = extractCanonicalMentions(text);
+  // Store mention data when a mention is made
+  const storeMention = async (mentionedUserId, contentType, contentId) => {
+    if (!userProfile || !mentionedUserId || userProfile.id === mentionedUserId) {
+      console.log('⏭️ Skipping mention storage:', {
+        hasUserProfile: !!userProfile,
+        mentionedUserId,
+        isSelf: userProfile?.id === mentionedUserId
+      });
+      return;
+    }
+
+    try {
+      console.log('💾 Storing mention:', {
+        mentionedUserId,
+        mentionedBy: userProfile.id,
+        contentType,
+        contentId
+      });
+
+      // Check if content ID is valid
+      if (!contentId) {
+        console.error('❌ Invalid contentId for mention:', contentId);
+        return;
+      }
+
+      // Insert the mention into Supabase
+      const { data, error } = await supabase
+        .from('user_mentions_mgg2024')
+        .insert({
+          mentioned_user_id: mentionedUserId,
+          mentioned_by_id: userProfile.id,
+          content_type: contentType,
+          content_id: contentId
+        })
+        .select();
+
+      if (error) {
+        console.error('❌ Error storing mention:', error);
+        throw error;
+      }
+
+      console.log('✅ Mention stored successfully:', data);
+    } catch (error) {
+      console.error('❌ Error storing mention:', error);
+    }
+  };
+
+  // Process mentions after content is submitted
+  const processMentions = (text, contentType, contentId) => {
+    console.log('🔄 Processing mentions:', {
+      text: text?.substring(0, 100) + (text?.length > 100 ? '...' : ''),
+      contentType,
+      contentId,
+      hasUserProfile: !!userProfile
+    });
+
+    if (!text) {
+      console.log('⏭️ No text provided for mention processing');
+      return [];
+    }
+
+    if (!userProfile) {
+      console.log('⏭️ No user profile available for mention processing');
+      return [];
+    }
+
+    const mentions = extractMentions(text);
 
     if (mentions.length === 0) {
-      mentions = extractPlainHandleMentions(text);
+      console.log('⏭️ No mentions found in text');
+      return [];
     }
-    if (mentions.length === 0) return;
 
-    const rows = mentions.map((m) => ({
-      mentioned_user_id: m.userId,
-      content_type: contentType,
-      content_id: contentId,
-    }));
+    // Store each mention
+    mentions.forEach((mention) => {
+      console.log('📝 Processing mention:', mention);
+      storeMention(mention.userId, contentType, contentId);
+    });
 
-    const { error } = await supabase.from('user_mentions_mgg2024').insert(rows);
-    if (error) console.error('processMentions insert error:', error);
+    console.log(`✅ Processed ${mentions.length} mentions`);
+    return mentions;
   };
 
-  const value = useMemo(
-    () => ({
-      getMentionTriggerAt,
-      processMentions,
-      // You can still expose any other helpers your UI uses, unchanged.
-    }),
-    []
-  );
+  // Render function for parsing text with mentions
+  const renderWithMentions = (text) => {
+    if (!text) return null;
+
+    // Use regex to match @[username](userId) format
+    const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    // Clone the text to avoid modification issues
+    const textStr = String(text);
+
+    while ((match = mentionRegex.exec(textStr)) !== null) {
+      const username = match[1].trim();
+      const userId = match[2];
+
+      // Add text before mention
+      if (match.index > lastIndex) {
+        parts.push(textStr.substring(lastIndex, match.index));
+      }
+
+      // Add mention component
+      parts.push(
+        <UserMention
+          key={`mention-${match.index}`}
+          userId={userId}
+          username={username}
+        />
+      );
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < textStr.length) {
+      parts.push(textStr.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
+  const value = {
+    users,
+    loading,
+    mentionSuggestions,
+    showSuggestions,
+    mentionPosition,
+    selectedIndex,
+    setSelectedIndex,
+    handleMentionInput,
+    processMentions,
+    renderWithMentions,
+    setShowSuggestions,
+    mentionsTableExists,
+    currentMentionStartIndex,
+    setCurrentMentionStartIndex
+  };
 
   return (
-    <MentionContext.Provider value={value}>{children}</MentionContext.Provider>
+    <MentionContext.Provider value={value}>
+      {children}
+    </MentionContext.Provider>
   );
+}
+
+export function useMention() {
+  return useContext(MentionContext);
 }
