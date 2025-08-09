@@ -210,6 +210,15 @@ export function MentionProvider({ children }) {
       }
 
       console.log('✅ Mention stored successfully:', data);
+
+      // Notify listeners about the new mention
+      await supabase
+        .channel('user_mentions')
+        .send({
+          type: 'broadcast',
+          event: 'mention-created',
+          payload: { mentionedUserId }
+        });
     } catch (error) {
       console.error('❌ Error storing mention:', error);
     }
