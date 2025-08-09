@@ -95,11 +95,11 @@ export function MentionProvider({ children }) {
 
     if (lastAtIndex >= 0 && lastAtIndex < cursorPosition) {
       // Check if @ is at the beginning or has a space/newline before it
-      const isValidMentionStart = lastAtIndex === 0 || /[\s\n]/.test(text[lastAtIndex - 1]);
+      const isValidMentionStart = lastAtIndex === 0 || /\s/.test(text[lastAtIndex - 1]);
       
       // Get text between @ and cursor
       const textBetween = text.substring(lastAtIndex, cursorPosition);
-      const hasSpaceOrNewline = /[\s\n]/.test(textBetween.substring(1));
+      const hasSpaceOrNewline = /\s/.test(textBetween.substring(1));
 
       // If it's a valid mention start and there's no space/newline after @
       if (isValidMentionStart && !hasSpaceOrNewline) {
