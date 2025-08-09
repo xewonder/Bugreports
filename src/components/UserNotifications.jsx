@@ -132,21 +132,27 @@ const UserNotifications = () => {
 
     // Set up real-time subscription only if table exists
     if (mentionsTableExists) {
-      const subscription = supabase.
-      channel('user_mentions').
-      on('postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'user_mentions_mgg2024',
-        filter: `mentioned_user_id=eq.${userProfile.id}`
-      },
-      (payload) => {
-        // Add new notification
-        fetchNotifications();
-      }
-      ).
-      subscribe();
+      const subscription = supabase
+        .channel('user_mentions')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'user_mentions_mgg2024',
+            filter: `mentioned_user_id=eq.${userProfile.id}`
+          },
+          () => {
+            // Add new notification
+            fetchNotifications();
+          }
+        )
+        .on('broadcast', { event: 'mention-created' }, (payload) => {
+          if (payload.payload?.mentionedUserId === userProfile.id) {
+            fetchNotifications();
+          }
+        })
+        .subscribe();
 
       return () => {
         subscription.unsubscribe();

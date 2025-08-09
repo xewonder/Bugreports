@@ -16,15 +16,16 @@ const UserMention = ({ userId, username, className = '' }) => {
       initial={{ backgroundColor: '#e0f2fe' }}
       animate={{ backgroundColor: '#dbeafe' }}
       whileHover={{ backgroundColor: '#bfdbfe' }}
-      className={`inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-blue-700 hover:bg-blue-100 transition-colors font-medium cursor-pointer ${className}`}
+      className={`user-mention inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 text-blue-700 hover:bg-blue-100 transition-colors font-medium cursor-pointer ${className}`}
       onClick={(e) => {
         e.stopPropagation();
         console.log(`Clicked on mention: ${username} (${userId})`);
         // In a future implementation, you could navigate to a user profile here
-      }}>
+      }}
+    >
       @{username}
-    </motion.span>);
-
+    </motion.span>
+  );
 };
 
 export default UserMention;
